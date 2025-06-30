@@ -1,0 +1,24 @@
+[workspace]
+members = ["encryption"]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+# async
+async-trait = "0.1.88"
+tokio = "1.45.1"
+
+# encryption
+chacha20poly1305 = "0.10.1"
+aes-siv = "0.7.0"
+
+# hashing
+sha2 = "0.10.9"
+
+[package]
+name = "kagimori"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
