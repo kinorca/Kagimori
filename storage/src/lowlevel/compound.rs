@@ -1,4 +1,5 @@
-use crate::LowLevelStorage;
+use crate::DataStorage;
+use crate::lowlevel::LowLevelStorage;
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -41,8 +42,10 @@ impl CompoundLowLevelStorage {
     }
 }
 
+impl LowLevelStorage for CompoundLowLevelStorage {}
+
 #[async_trait]
-impl LowLevelStorage for CompoundLowLevelStorage {
+impl DataStorage for CompoundLowLevelStorage {
     async fn set(&self, key: &str, value: &[u8]) -> Result<(), crate::Error> {
         for storage in &self.storages {
             storage.set(key, value).await?;

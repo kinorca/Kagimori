@@ -5,11 +5,11 @@ mod aesgcmsiv;
 #[cfg(test)]
 mod test;
 
-use crate::error::Error;
+pub use crate::error::Error;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait Encryptor {
+pub trait Cipher: Send + Sync {
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 }
@@ -17,7 +17,7 @@ pub trait Encryptor {
 pub struct Unencrypted;
 
 #[async_trait]
-impl Encryptor for Unencrypted {
+impl Cipher for Unencrypted {
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         Ok(data.to_vec())
     }

@@ -1,24 +1,24 @@
-use crate::Encryptor;
+use crate::Cipher;
 use crate::error::Error;
 use async_trait::async_trait;
 use chacha20poly1305::aead::generic_array::typenum::Unsigned;
 use chacha20poly1305::aead::{Aead, Nonce, OsRng};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit};
 
-pub struct ChaCha20Poly1305Encryptor {
+pub struct ChaCha20Poly1305Cipher {
     key: Key,
 }
 
 type ChaCha20Poly1305Nonce = Nonce<ChaCha20Poly1305>;
 
-impl ChaCha20Poly1305Encryptor {
+impl ChaCha20Poly1305Cipher {
     pub fn new(key: Key) -> Self {
         Self { key }
     }
 }
 
 #[async_trait]
-impl Encryptor for ChaCha20Poly1305Encryptor {
+impl Cipher for ChaCha20Poly1305Cipher {
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let cipher = ChaCha20Poly1305::new(&self.key);
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
@@ -47,13 +47,13 @@ impl Encryptor for ChaCha20Poly1305Encryptor {
 
 #[cfg(test)]
 mod tests {
-    use crate::chacha20poly1305::ChaCha20Poly1305Encryptor;
+    use crate::chacha20poly1305::ChaCha20Poly1305Cipher;
     use crate::predefined_tests;
     use chacha20poly1305::Key;
 
-    fn create_sut() -> ChaCha20Poly1305Encryptor {
+    fn create_sut() -> ChaCha20Poly1305Cipher {
         let key = Key::from_slice(&[0u8; 32]);
-        ChaCha20Poly1305Encryptor::new(*key)
+        ChaCha20Poly1305Cipher::new(*key)
     }
 
     predefined_tests!(create_sut);

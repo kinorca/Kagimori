@@ -6,10 +6,10 @@ macro_rules! predefined_tests {
             let encryptor = $create_sut();
             let plaintext = b"test data";
 
-            let ciphertext = $crate::Encryptor::encrypt(&encryptor, plaintext)
+            let ciphertext = $crate::Cipher::encrypt(&encryptor, plaintext)
                 .await
                 .expect("Cannot encrypt data");
-            let decrypted_plaintext = $crate::Encryptor::decrypt(&encryptor, &ciphertext)
+            let decrypted_plaintext = $crate::Cipher::decrypt(&encryptor, &ciphertext)
                 .await
                 .expect("Cannot decrypt data");
 

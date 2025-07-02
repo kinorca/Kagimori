@@ -1,15 +1,12 @@
-mod compound;
+pub mod crypto;
 mod error;
-mod file;
+pub mod lowlevel;
 
 use async_trait::async_trait;
-
-pub use compound::*;
 pub use error::Error;
-pub use file::*;
 
 #[async_trait]
-pub trait LowLevelStorage: Send + Sync {
+pub trait DataStorage: Send + Sync {
     async fn set(&self, key: &str, value: &[u8]) -> Result<(), Error>;
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error>;
     async fn delete(&self, key: &str) -> Result<(), Error>;

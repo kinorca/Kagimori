@@ -1,4 +1,5 @@
-use crate::{Error, LowLevelStorage};
+use crate::lowlevel::LowLevelStorage;
+use crate::{DataStorage, Error};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -21,8 +22,10 @@ impl FileLowLevelStorage {
     }
 }
 
+impl LowLevelStorage for FileLowLevelStorage {}
+
 #[async_trait]
-impl LowLevelStorage for FileLowLevelStorage {
+impl DataStorage for FileLowLevelStorage {
     async fn set(&self, key: &str, value: &[u8]) -> Result<(), Error> {
         let file = self.path(key);
         let file = tokio::fs::File::create(&file).await.map_err(Error::Io)?;

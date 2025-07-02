@@ -4,7 +4,20 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
+encryption.workspace = true
+
 async-trait.workspace = true
 
 thiserror.workspace = true
-tokio = { workspace = true, features = ["fs", "io-util"] }
+
+tokio = { workspace = true, features = ["fs", "io-util"], optional = true }
+
+etcd-client = { workspace = true, optional = true }
+
+[features]
+default = []
+
+file = ["dep:tokio"]
+etcd = ["dep:etcd-client"]
+
+full = ["file", "etcd"]
