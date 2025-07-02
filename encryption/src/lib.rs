@@ -2,7 +2,6 @@ mod chacha20poly1305;
 mod error;
 
 mod aesgcmsiv;
-mod identifier;
 #[cfg(test)]
 mod test;
 
@@ -13,10 +12,6 @@ use async_trait::async_trait;
 pub trait Encryptor {
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
-}
-
-pub trait IdentifiableEncryptor: Encryptor {
-    fn identifier(&self) -> [u8; 16];
 }
 
 pub struct Unencrypted;

@@ -1,29 +1,19 @@
+use crate::Encryptor;
 use crate::error::Error;
-use crate::identifier::compute_identifier;
-use crate::{Encryptor, IdentifiableEncryptor};
 use async_trait::async_trait;
 use chacha20poly1305::aead::generic_array::typenum::Unsigned;
 use chacha20poly1305::aead::{Aead, Nonce, OsRng};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit};
-use sha2::Digest;
 
 pub struct ChaCha20Poly1305Encryptor {
     key: Key,
-    identifier: [u8; 16],
 }
 
 type ChaCha20Poly1305Nonce = Nonce<ChaCha20Poly1305>;
 
 impl ChaCha20Poly1305Encryptor {
     pub fn new(key: Key) -> Self {
-        let identifier = compute_identifier(0x0001, key.as_slice());
-        Self { key, identifier }
-    }
-}
-
-impl IdentifiableEncryptor for ChaCha20Poly1305Encryptor {
-    fn identifier(&self) -> [u8; 16] {
-        self.identifier.clone()
+        Self { key }
     }
 }
 

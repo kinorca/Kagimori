@@ -1,5 +1,5 @@
 [workspace]
-members = ["encryption"]
+members = ["encryption", "storage"]
 
 [workspace.package]
 edition = "2024"
@@ -15,6 +15,16 @@ aes-siv = "0.7.0"
 
 # hashing
 sha2 = "0.10.9"
+
+# serde
+serde = "1.0.219"
+serde_json = "1.0.140"
+
+# misc
+uuid = "1.17.0"
+
+# error
+thiserror = "2.0.12"
 
 [package]
 name = "kagimori"
