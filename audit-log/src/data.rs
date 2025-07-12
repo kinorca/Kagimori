@@ -32,24 +32,45 @@ pub struct EncryptionAction {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct DecryptionAction {}
+pub struct DecryptionAction {
+    pub data_key: String,
+    pub algorithm: String,
+    pub key_id: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct KeyRotationAction {}
+pub struct KeyRotationAction {
+    pub algorithm: String,
+    pub key_id: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct KeyDeletionAction {}
+pub struct KeyDeletionAction {
+    pub algorithm: String,
+    pub key_id: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct KeyCreationAction {}
+pub struct KeyCreationAction {
+    pub algorithm: String,
+    pub key_id: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SigningAction {}
+pub struct SigningAction {
+    pub data_key: String,
+    pub algorithm: String,
+    pub key_id: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VerificationAction {}
+pub struct VerificationAction {
+    pub data_key: String,
+    pub algorithm: String,
+    pub key_id: String,
+}
