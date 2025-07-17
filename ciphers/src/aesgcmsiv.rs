@@ -1,7 +1,7 @@
 use crate::Cipher;
 use aes_siv::aead::generic_array::typenum::Unsigned;
 use aes_siv::aead::{Aead, OsRng};
-use aes_siv::{AeadCore, Aes256SivAead, Key, KeyInit};
+use aes_siv::{AeadCore, Aes256SivAead, Key, KeyInit, KeySizeUser};
 use async_trait::async_trait;
 
 pub struct AesGcmSivCipher {
@@ -11,6 +11,20 @@ pub struct AesGcmSivCipher {
 impl AesGcmSivCipher {
     pub fn new(key: Key<Aes256SivAead>) -> Self {
         Self { key }
+    }
+}
+
+impl TryFrom<Vec<u8>> for AesGcmSivCipher {
+    type Error = crate::error::Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.len() != <Aes256SivAead as KeySizeUser>::KeySize::USIZE {
+            Err(Self::Error::InvalidKeyLength)
+        } else {
+            Ok(Self::new(Key::<Aes256SivAead>::clone_from_slice(
+                value.as_slice(),
+            )))
+        }
     }
 }
 

@@ -3,7 +3,7 @@ use crate::error::Error;
 use async_trait::async_trait;
 use chacha20poly1305::aead::generic_array::typenum::Unsigned;
 use chacha20poly1305::aead::{Aead, Nonce, OsRng};
-use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit};
+use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit, KeySizeUser};
 
 pub struct ChaCha20Poly1305Cipher {
     key: Key,
@@ -14,6 +14,18 @@ type ChaCha20Poly1305Nonce = Nonce<ChaCha20Poly1305>;
 impl ChaCha20Poly1305Cipher {
     pub fn new(key: Key) -> Self {
         Self { key }
+    }
+}
+
+impl TryFrom<Vec<u8>> for ChaCha20Poly1305Cipher {
+    type Error = Error;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
+            Err(Error::InvalidKeyLength)
+        } else {
+            Ok(Self::new(Key::clone_from_slice(value.as_slice())))
+        }
     }
 }
 

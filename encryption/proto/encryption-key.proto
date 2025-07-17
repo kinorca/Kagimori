@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package kagimori.encryption.key.v1;
+
+enum KeyAlgorithm {
+  UNKNOWN = 0;
+  AES_GCM_SIV = 1;
+  CHACHA20_POLY1305 = 2;
+}
+
+message EncryptionKey {
+  string id = 1;
+  uint64 version = 2;
+  KeyAlgorithm algorithm = 3;
+  bytes key = 4;
+}
+
+message EncryptionKeyRef {
+  string id = 1;
+  uint64 version = 2;
+}

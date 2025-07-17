@@ -1,7 +1,7 @@
 use crate::lowlevel::LowLevelStorage;
 use crate::{DataStorage, Error};
 use async_trait::async_trait;
-use encryption::Cipher;
+use ciphers::Cipher;
 
 pub struct CryptedStorage<C, S> {
     cipher: C,

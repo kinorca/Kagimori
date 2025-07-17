@@ -3,7 +3,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    Cipher(encryption::Error),
+    Cipher(ciphers::Error),
     #[cfg(feature = "file")]
     Io(std::io::Error),
     #[cfg(feature = "etcd")]
