@@ -20,7 +20,7 @@ See the [LICENSE](./LICENSE) file for details.
 
 ### API (for `*.proto` files)
 
-Protocol Buffers definition files in this project are licensed under the **Apache License 2.0**.
+Protocol Buffers definition files using for APIs in this project are licensed under the **Apache License 2.0**.
 See the [API_LICENSE](./API_LICENSE) file for details.
 
-&copy; 2025 Kinorca
+Copyright 2025 Kinorca
