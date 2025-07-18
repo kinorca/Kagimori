@@ -19,6 +19,7 @@ use aes_siv::aead::{Aead, OsRng};
 use aes_siv::{AeadCore, Aes256SivAead, Key, KeyInit, KeySizeUser};
 use async_trait::async_trait;
 
+#[derive(Clone)]
 pub struct AesGcmSivCipher {
     key: Key<Aes256SivAead>,
 }

@@ -13,13 +13,31 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
-pub use uuid::Uuid;
+use crate::server::KagimoriServer;
+use encryption::DataStorage;
+use std::net::SocketAddr;
+use tonic::transport::Server;
 
-#[derive(Debug)]
-pub enum Error {
-    ChaCha20Poly1305(chacha20poly1305::Error),
-    AesGcmSiv(aes_siv::Error),
-    InvalidKeyLength,
-    InvalidKeyId,
-    KeyNotFound(Uuid),
+pub struct KagimoriH2cServer<S> {
+    inner: KagimoriServer<S>,
+    listen: SocketAddr,
+}
+
+impl<S> KagimoriH2cServer<S> {
+    pub(super) fn new(inner: KagimoriServer<S>, listen: SocketAddr) -> Self {
+        Self { inner, listen }
+    }
+}
+
+impl<S> KagimoriH2cServer<S>
+where
+    S: 'static,
+    S: DataStorage,
+    S: Clone,
+{
+    pub async fn run(self) -> Result<(), tonic::transport::Error> {
+        let svc = self.inner.create_service();
+        Server::builder().add_routes(svc).serve(self.listen).await?;
+        Ok(())
+    }
 }

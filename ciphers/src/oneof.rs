@@ -18,6 +18,7 @@ use crate::chacha20poly1305::ChaCha20Poly1305Cipher;
 use crate::{Cipher, Error, Unencrypted};
 use async_trait::async_trait;
 
+#[derive(Clone)]
 pub enum OneOfCipher {
     Unencrypted(Unencrypted),
     AesGcmSiv(AesGcmSivCipher),

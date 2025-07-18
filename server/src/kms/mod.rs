@@ -26,6 +26,15 @@ pub(crate) struct KmsService<S> {
     key_id: String,
 }
 
+impl<S> KmsService<S>
+where
+    S: DataStorage,
+{
+    pub fn new(encryptor: Encryptor<S>, key_id: String) -> Self {
+        Self { encryptor, key_id }
+    }
+}
+
 #[async_trait]
 impl<S> KeyManagementService for KmsService<S>
 where

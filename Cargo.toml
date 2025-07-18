@@ -29,10 +29,15 @@ audit-log = { path = "audit-log" }
 # async
 async-trait = "0.1.88"
 tokio = "1.46.1"
+tokio-rustls = "0.26.2"
 
 # gRPC / protobuf
 tonic = "0.13.1"
 tonic-build = "0.13.1"
+hyper = "1.6.0"
+hyper-util = "0.1.15"
+tower = "0.5.2"
+tower-http = "0.6.6"
 
 prost = "0.13.5" # locked by tonic
 prost-build = "0.13.5" # locked by tonic-build
@@ -47,10 +52,13 @@ sha2 = "0.10.9"
 # serde
 serde = "1.0.219"
 serde_json = "1.0.140"
+serde_yml = "0.0.12"
 
 # misc
 uuid = "1.17.0"
 chrono = "0.4.41"
+clap = "4.5.41"
+base64 = "0.22.1"
 
 # database
 etcd-client = "0.16.1"
@@ -69,7 +77,7 @@ edition.workspace = true
 
 [dependencies]
 ciphers.workspace = true
-storage.workspace = true
+storage = { workspace = true, features = ["full"] }
 encryption.workspace = true
 server.workspace = true
 
@@ -77,3 +85,10 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 tokio = { workspace = true, features = ["full"] }
+
+clap = { workspace = true, features = ["derive"] }
+
+uuid = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+serde_yml.workspace = true
+base64.workspace = true

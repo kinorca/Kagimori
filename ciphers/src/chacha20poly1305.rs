@@ -20,6 +20,7 @@ use chacha20poly1305::aead::generic_array::typenum::Unsigned;
 use chacha20poly1305::aead::{Aead, Nonce, OsRng};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit, KeySizeUser};
 
+#[derive(Clone)]
 pub struct ChaCha20Poly1305Cipher {
     key: Key,
 }

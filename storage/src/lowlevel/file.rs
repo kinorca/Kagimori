@@ -19,6 +19,7 @@ use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+#[derive(Debug, Clone)]
 pub struct FileLowLevelStorage {
     directory: PathBuf,
 }

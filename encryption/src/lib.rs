@@ -38,6 +38,17 @@ pub struct Encryptor<S> {
     storage: S,
 }
 
+impl<S> Clone for Encryptor<S>
+where
+    S: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            storage: self.storage.clone(),
+        }
+    }
+}
+
 impl<S> Encryptor<S>
 where
     S: DataStorage,

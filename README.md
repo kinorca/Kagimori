@@ -23,4 +23,4 @@ See the [LICENSE](./LICENSE) file for details.
 Protocol Buffers definition files using for APIs in this project are licensed under the **Apache License 2.0**.
 See the [API_LICENSE](./API_LICENSE) file for details.
 
-Copyright 2025 Kinorca
+Copyright 2025 SiLeader and Kinorca

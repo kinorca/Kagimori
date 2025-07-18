@@ -16,7 +16,9 @@
 use crate::lowlevel::LowLevelStorage;
 use crate::{DataStorage, Error};
 use async_trait::async_trait;
-use etcd_client::{Client, GetOptions};
+use etcd_client::GetOptions;
+
+pub use etcd_client::Client;
 
 #[derive(Clone)]
 pub struct EtcdLowLevelStorage {

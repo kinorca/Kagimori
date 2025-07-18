@@ -18,6 +18,7 @@ mod error;
 
 pub mod aesgcmsiv;
 pub mod oneof;
+pub mod rotatable;
 #[cfg(test)]
 mod test;
 
@@ -30,6 +31,7 @@ pub trait Cipher: Send + Sync {
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 }
 
+#[derive(Clone, Copy)]
 pub struct Unencrypted;
 
 #[async_trait]
