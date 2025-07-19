@@ -38,6 +38,10 @@ impl RotatableCipher {
 
 #[async_trait]
 impl Cipher for RotatableCipher {
+    fn name(&self) -> &'static str {
+        self.default_cipher.name()
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let ciphertext = self.default_cipher.encrypt(data).await?;
 

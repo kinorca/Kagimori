@@ -155,8 +155,10 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 name = "audit-log"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "serde",
+ "tracing",
 ]
 
 [[package]]
@@ -541,6 +543,7 @@ name = "encryption"
 version = "0.1.0"
 dependencies = [
  "audit-log",
+ "chrono",
  "ciphers",
  "prost",
  "prost-build",
@@ -936,6 +939,7 @@ dependencies = [
 name = "kagimori"
 version = "0.1.0"
 dependencies = [
+ "audit-log",
  "base64",
  "ciphers",
  "clap",
@@ -1489,6 +1493,7 @@ dependencies = [
 name = "server"
 version = "0.1.0"
 dependencies = [
+ "audit-log",
  "encryption",
  "hyper",
  "hyper-util",
@@ -1500,6 +1505,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1898,6 +1904,7 @@ version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
+ "getrandom 0.3.3",
  "js-sys",
  "serde",
  "wasm-bindgen",

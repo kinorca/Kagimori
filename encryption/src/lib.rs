@@ -16,6 +16,8 @@
 mod key;
 mod proto;
 
+use audit_log::{Action, AuditLog, AuditLogger, DecryptionAction, EncryptionAction};
+use chrono::Utc;
 use ciphers::Cipher;
 pub use storage::DataStorage;
 
@@ -34,27 +36,34 @@ impl From<ciphers::Error> for Error {
     }
 }
 
-pub struct Encryptor<S> {
+pub struct Encryptor<S, L> {
     storage: S,
+    audit_logger: L,
 }
 
-impl<S> Clone for Encryptor<S>
+impl<S, L> Clone for Encryptor<S, L>
 where
     S: Clone,
+    L: Clone,
 {
     fn clone(&self) -> Self {
         Self {
             storage: self.storage.clone(),
+            audit_logger: self.audit_logger.clone(),
         }
     }
 }
 
-impl<S> Encryptor<S>
+impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
+    L: AuditLogger,
 {
-    pub fn new(storage: S) -> Self {
-        Self { storage }
+    pub fn new(storage: S, audit_logger: L) -> Self {
+        Self {
+            storage,
+            audit_logger,
+        }
     }
 }
 
@@ -64,15 +73,40 @@ pub struct Ciphertext {
     pub ciphertext: Vec<u8>,
 }
 
-impl<S> Encryptor<S>
+pub struct RequestInfo {
+    pub event_id: String,
+    pub service: String,
+    pub user: String,
+    pub data_key: Option<String>,
+}
+
+impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
+    L: AuditLogger,
 {
-    pub async fn encrypt(&self, key_id: &str, data: &[u8]) -> Result<Ciphertext, Error> {
+    pub async fn encrypt(
+        &self,
+        request: RequestInfo,
+        key_id: &str,
+        data: &[u8],
+    ) -> Result<Ciphertext, Error> {
         let (cipher, er) = self.get_latest_cipher(key_id).await?;
         let ciphertext = cipher.encrypt(data).await.map_err(Error::from)?;
 
-        // TODO audit log
+        self.audit_logger
+            .log(AuditLog {
+                timestamp: Utc::now(),
+                event_id: request.event_id,
+                service: request.service,
+                user: request.user,
+                action: Action::Encryption(EncryptionAction {
+                    data_key: request.data_key,
+                    algorithm: cipher.name().to_string(),
+                    key_id: key_id.to_string(),
+                }),
+            })
+            .await;
 
         Ok(Ciphertext {
             key_id: key_id.to_string(),
@@ -81,7 +115,11 @@ where
         })
     }
 
-    pub async fn decrypt(&self, ciphertext: Ciphertext) -> Result<Vec<u8>, Error> {
+    pub async fn decrypt(
+        &self,
+        request: RequestInfo,
+        ciphertext: Ciphertext,
+    ) -> Result<Vec<u8>, Error> {
         let cipher = self
             .get_cipher(&ciphertext.key_id, ciphertext.version)
             .await?;
@@ -91,7 +129,19 @@ where
             .await
             .map_err(Error::from)?;
 
-        // TODO audit log
+        self.audit_logger
+            .log(AuditLog {
+                timestamp: Utc::now(),
+                event_id: request.event_id,
+                service: request.service,
+                user: request.user,
+                action: Action::Decryption(DecryptionAction {
+                    data_key: request.data_key,
+                    algorithm: cipher.name().to_string(),
+                    key_id: ciphertext.key_id,
+                }),
+            })
+            .await;
 
         Ok(plaintext)
     }

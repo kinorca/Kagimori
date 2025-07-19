@@ -21,3 +21,6 @@ edition.workspace = true
 [dependencies]
 chrono = { workspace = true, features = ["serde"] }
 serde = { workspace = true, features = ["derive"] }
+tracing.workspace = true
+
+async-trait.workspace = true

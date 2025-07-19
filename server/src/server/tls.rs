@@ -14,6 +14,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::server::KagimoriServer;
+use audit_log::AuditLogger;
 use encryption::DataStorage;
 use hyper::http;
 use hyper::server::conn::http2::Builder;
@@ -28,14 +29,18 @@ use tonic::body::Body;
 use tower::ServiceExt;
 use tracing::{error, info};
 
-pub struct KagimoriTlsServer<S> {
-    inner: KagimoriServer<S>,
+pub struct KagimoriTlsServer<S, L> {
+    inner: KagimoriServer<S, L>,
     config: ServerConfig,
     listen: SocketAddr,
 }
 
-impl<S> KagimoriTlsServer<S> {
-    pub(super) fn new(inner: KagimoriServer<S>, config: ServerConfig, listen: SocketAddr) -> Self {
+impl<S, L> KagimoriTlsServer<S, L> {
+    pub(super) fn new(
+        inner: KagimoriServer<S, L>,
+        config: ServerConfig,
+        listen: SocketAddr,
+    ) -> Self {
         Self {
             inner,
             config,
@@ -44,11 +49,10 @@ impl<S> KagimoriTlsServer<S> {
     }
 }
 
-impl<S> KagimoriTlsServer<S>
+impl<S, L> KagimoriTlsServer<S, L>
 where
-    S: 'static,
-    S: DataStorage,
-    S: Clone,
+    S: 'static + DataStorage + Clone,
+    L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> std::io::Result<()> {
         let listener = TcpListener::bind(self.listen).await?;

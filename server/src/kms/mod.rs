@@ -17,30 +17,36 @@ use crate::proto::kubernetes::kms::v2::key_management_service_server::KeyManagem
 use crate::proto::kubernetes::kms::v2::{
     DecryptRequest, DecryptResponse, EncryptRequest, EncryptResponse, StatusRequest, StatusResponse,
 };
-use encryption::{Ciphertext, DataStorage, Encryptor};
+use audit_log::AuditLogger;
+use encryption::{Ciphertext, DataStorage, Encryptor, RequestInfo};
 use std::collections::HashMap;
 use tonic::{Request, Response, Status, async_trait};
+use uuid::Uuid;
 
-pub(crate) struct KmsService<S> {
-    encryptor: Encryptor<S>,
+pub(crate) struct KmsService<S, L> {
+    encryptor: Encryptor<S, L>,
     key_id: String,
 }
 
-impl<S> KmsService<S>
+impl<S, L> KmsService<S, L>
 where
     S: DataStorage,
+    L: AuditLogger,
 {
-    pub fn new(encryptor: Encryptor<S>, key_id: String) -> Self {
+    pub fn new(encryptor: Encryptor<S, L>, key_id: String) -> Self {
         Self { encryptor, key_id }
     }
 }
 
 #[async_trait]
-impl<S> KeyManagementService for KmsService<S>
+impl<S, L> KeyManagementService for KmsService<S, L>
 where
     S: 'static,
     S: DataStorage,
     S: Send + Sync,
+    L: 'static,
+    L: AuditLogger,
+    L: Send + Sync,
 {
     async fn status(
         &self,
@@ -68,11 +74,19 @@ where
         );
         let plaintext = self
             .encryptor
-            .decrypt(Ciphertext {
-                key_id: req.key_id,
-                version,
-                ciphertext: req.ciphertext,
-            })
+            .decrypt(
+                RequestInfo {
+                    event_id: Uuid::now_v7().to_string(),
+                    service: "KMSv2".to_string(),
+                    user: req.uid,
+                    data_key: None,
+                },
+                Ciphertext {
+                    key_id: req.key_id,
+                    version,
+                    ciphertext: req.ciphertext,
+                },
+            )
             .await
             .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
         Ok(Response::new(DecryptResponse { plaintext }))
@@ -86,7 +100,16 @@ where
 
         let ciphertext = self
             .encryptor
-            .encrypt(&self.key_id, &req.plaintext)
+            .encrypt(
+                RequestInfo {
+                    event_id: Uuid::now_v7().to_string(),
+                    service: "KMSv2".to_string(),
+                    user: req.uid,
+                    data_key: None,
+                },
+                &self.key_id,
+                &req.plaintext,
+            )
             .await
             .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
 

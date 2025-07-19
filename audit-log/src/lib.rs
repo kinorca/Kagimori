@@ -13,10 +13,13 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::data::AuditLog;
-
 mod data;
+pub mod logger;
 
-pub trait AuditLogger {
-    fn log(&self, log: AuditLog);
+use async_trait::async_trait;
+pub use data::*;
+
+#[async_trait]
+pub trait AuditLogger: Send + Sync {
+    async fn log(&self, log: AuditLog);
 }

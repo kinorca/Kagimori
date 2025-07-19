@@ -80,6 +80,7 @@ ciphers.workspace = true
 storage = { workspace = true, features = ["full"] }
 encryption.workspace = true
 server.workspace = true
+audit-log.workspace = true
 
 tracing.workspace = true
 tracing-subscriber.workspace = true

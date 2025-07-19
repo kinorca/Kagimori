@@ -21,7 +21,7 @@ use ciphers::oneof::OneOfCipher;
 use prost::Message;
 use storage::DataStorage;
 
-impl<S> Encryptor<S> {
+impl<S, L> Encryptor<S, L> {
     fn latest_key(key_id: &str) -> String {
         format!("/encryption/keys/{key_id}/latest")
     }
@@ -31,7 +31,7 @@ impl<S> Encryptor<S> {
     }
 }
 
-impl<S> Encryptor<S>
+impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
 {
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<S> Encryptor<S>
+impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
 {

@@ -14,26 +14,26 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::server::KagimoriServer;
+use audit_log::AuditLogger;
 use encryption::DataStorage;
 use std::net::SocketAddr;
 use tonic::transport::Server;
 
-pub struct KagimoriH2cServer<S> {
-    inner: KagimoriServer<S>,
+pub struct KagimoriH2cServer<S, L> {
+    inner: KagimoriServer<S, L>,
     listen: SocketAddr,
 }
 
-impl<S> KagimoriH2cServer<S> {
-    pub(super) fn new(inner: KagimoriServer<S>, listen: SocketAddr) -> Self {
+impl<S, L> KagimoriH2cServer<S, L> {
+    pub(super) fn new(inner: KagimoriServer<S, L>, listen: SocketAddr) -> Self {
         Self { inner, listen }
     }
 }
 
-impl<S> KagimoriH2cServer<S>
+impl<S, L> KagimoriH2cServer<S, L>
 where
-    S: 'static,
-    S: DataStorage,
-    S: Clone,
+    S: 'static + DataStorage + Clone,
+    L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> Result<(), tonic::transport::Error> {
         let svc = self.inner.create_service();

@@ -26,7 +26,11 @@ pub(crate) enum StorageType {
 #[derive(Debug, Parser)]
 pub(crate) struct Args {
     // server
-    #[arg(long, help = "Listen address", default_value = "0.0.0.0:8602")]
+    #[arg(
+        long,
+        help = "Listen address (tcp://HOST:PORT or unix://PATH)",
+        default_value = "tcp://0.0.0.0:8602"
+    )]
     pub listen: String,
 
     // KMS v2

@@ -17,10 +17,13 @@ mod args;
 mod master_key;
 
 use crate::args::{Args, StorageType};
+use audit_log::AuditLogger;
+use audit_log::logger::tracing::TracingAuditLogger;
 use ciphers::Cipher;
 use clap::Parser;
 use encryption::Encryptor;
 use server::{CertificateDer, KagimoriServer, PemObject, PrivateKeyDer};
+use std::path::Path;
 use storage::crypto::CryptedStorage;
 use storage::lowlevel::LowLevelStorage;
 use storage::lowlevel::etcd::{Client, EtcdLowLevelStorage};
@@ -38,6 +41,8 @@ async fn main() {
     let args = Args::parse();
     debug!("Command line arguments: {args:?}");
 
+    let logger = TracingAuditLogger;
+
     let cipher = args.create_master_key().into_cipher();
     match args.storage {
         StorageType::Etcd => {
@@ -48,6 +53,7 @@ async fn main() {
                         .await
                         .unwrap(),
                 ),
+                logger,
                 args,
             )
             .await;
@@ -56,6 +62,7 @@ async fn main() {
             run_server(
                 cipher,
                 FileLowLevelStorage::new(args.storage_directory.as_str()).unwrap(),
+                logger,
                 args,
             )
             .await;
@@ -63,37 +70,38 @@ async fn main() {
     }
 }
 
-async fn run_server<C, S>(cipher: C, lls: S, args: Args)
+async fn run_server<C, S, L>(cipher: C, lls: S, audit_logger: L, args: Args)
 where
     C: 'static + Cipher + Clone,
     S: 'static + LowLevelStorage + Clone,
+    L: 'static + AuditLogger + Clone,
 {
     let storage = CryptedStorage::new(cipher, lls);
-    let encryptor = Encryptor::new(storage);
+    let encryptor = Encryptor::new(storage, audit_logger);
 
     let mut server = KagimoriServer::new(encryptor);
     if let Some(key_id) = args.kms_v2_key_id {
         server = server.enable_kms_v2(key_id);
     }
-    if let Some(cert) = args.tls_certificate
-        && let Some(private_key) = args.tls_private_key
-    {
-        let cert = CertificateDer::pem_file_iter(cert)
-            .unwrap()
-            .map(Result::unwrap);
-        let private_key = PrivateKeyDer::from_pem_file(private_key).unwrap();
+    if let Some(sock_addr) = args.listen.strip_prefix("tcp://") {
+        if let Some(cert) = args.tls_certificate
+            && let Some(private_key) = args.tls_private_key
+        {
+            let cert = CertificateDer::pem_file_iter(cert)
+                .unwrap()
+                .map(Result::unwrap);
+            let private_key = PrivateKeyDer::from_pem_file(private_key).unwrap();
 
-        server
-            .bind_tls(args.listen.parse().unwrap(), cert.collect(), private_key)
-            .unwrap()
-            .run()
-            .await
-            .unwrap();
-    } else {
-        server
-            .bind(args.listen.parse().unwrap())
-            .run()
-            .await
-            .unwrap();
+            server
+                .bind_tls(sock_addr.parse().unwrap(), cert.collect(), private_key)
+                .unwrap()
+                .run()
+                .await
+                .unwrap();
+        } else {
+            server.bind(sock_addr.parse().unwrap()).run().await.unwrap();
+        }
+    } else if let Some(path) = args.listen.strip_prefix("unix://") {
+        server.bind_uds(Path::new(path)).run().await.unwrap();
     }
 }

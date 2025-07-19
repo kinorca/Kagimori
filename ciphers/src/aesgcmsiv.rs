@@ -46,6 +46,10 @@ impl TryFrom<Vec<u8>> for AesGcmSivCipher {
 
 #[async_trait]
 impl Cipher for AesGcmSivCipher {
+    fn name(&self) -> &'static str {
+        "AES-GCM-SIV"
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, crate::error::Error> {
         let cipher = Aes256SivAead::new(&self.key);
         let nonce = Aes256SivAead::generate_nonce(&mut OsRng);

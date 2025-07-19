@@ -27,6 +27,14 @@ pub enum OneOfCipher {
 
 #[async_trait]
 impl Cipher for OneOfCipher {
+    fn name(&self) -> &'static str {
+        match self {
+            OneOfCipher::Unencrypted(c) => c.name(),
+            OneOfCipher::AesGcmSiv(c) => c.name(),
+            OneOfCipher::ChaCha20Poly1305(c) => c.name(),
+        }
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         match self {
             OneOfCipher::Unencrypted(c) => c.encrypt(data).await,

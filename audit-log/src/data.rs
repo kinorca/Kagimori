@@ -40,7 +40,7 @@ pub enum Action {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncryptionAction {
-    pub data_key: String,
+    pub data_key: Option<String>,
     pub algorithm: String,
     pub key_id: String,
 }
@@ -48,7 +48,7 @@ pub struct EncryptionAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DecryptionAction {
-    pub data_key: String,
+    pub data_key: Option<String>,
     pub algorithm: String,
     pub key_id: String,
 }
@@ -77,7 +77,7 @@ pub struct KeyCreationAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SigningAction {
-    pub data_key: String,
+    pub data_key: Option<String>,
     pub algorithm: String,
     pub key_id: String,
 }
@@ -85,7 +85,7 @@ pub struct SigningAction {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VerificationAction {
-    pub data_key: String,
+    pub data_key: Option<String>,
     pub algorithm: String,
     pub key_id: String,
 }
