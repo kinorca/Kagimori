@@ -80,6 +80,7 @@ where
     }
 
     async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error> {
-        self.inner.set_if_absent(key, value).await
+        let data = self.cipher.encrypt(value).await.map_err(Error::Cipher)?;
+        self.inner.set_if_absent(key, &data).await
     }
 }

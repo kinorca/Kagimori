@@ -44,7 +44,6 @@ impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
 {
-    #[tracing::instrument(skip(self))]
     async fn get_key(&self, key_id: &str, version: u64) -> Result<EncryptionKey, Error> {
         let key = Self::key(key_id, version);
         let key = self
@@ -56,7 +55,6 @@ where
         EncryptionKey::decode(key.as_slice()).map_err(Error::Decode)
     }
 
-    #[tracing::instrument(skip(self))]
     async fn set_key(&self, service: &str, ek: EncryptionKey) -> Result<EncryptionKey, Error> {
         let key = Self::key(ek.id.as_str(), ek.version);
         self.storage
@@ -86,7 +84,6 @@ where
         }
     }
 
-    #[tracing::instrument(skip(self))]
     async fn get_key_for_service(
         &self,
         service: &str,
@@ -107,7 +104,6 @@ impl<S, L> Encryptor<S, L>
 where
     S: DataStorage,
 {
-    #[tracing::instrument(skip(self))]
     pub(crate) async fn get_cipher(
         &self,
         key_id: &str,
@@ -125,7 +121,6 @@ where
         }
     }
 
-    #[tracing::instrument(skip(self))]
     async fn get_latest_cipher(
         &self,
         key_id: &str,
@@ -143,7 +138,6 @@ where
         Ok((c, er))
     }
 
-    #[tracing::instrument(skip(self))]
     pub(crate) async fn get_latest_cipher_for_service(
         &self,
         service: &str,

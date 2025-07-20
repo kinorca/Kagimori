@@ -21,6 +21,7 @@ use ciphers::chacha20poly1305::ChaCha20Poly1305Cipher;
 use ciphers::oneof::OneOfCipher;
 use ciphers::rotatable::RotatableCipher;
 use serde::Deserialize;
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
@@ -39,6 +40,7 @@ enum MasterKey {
 
 impl MasterKeyConfig {
     pub(crate) fn into_cipher(self) -> RotatableCipher {
+        debug!("default master key ID: {}", self.default);
         RotatableCipher::new(
             self.default,
             self.keys.into_iter().map(MasterKey::into_cipher).collect(),

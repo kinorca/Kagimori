@@ -57,12 +57,10 @@ impl LowLevelStorage for FileLowLevelStorage {}
 
 #[async_trait]
 impl DataStorage for FileLowLevelStorage {
-    #[tracing::instrument(skip(self))]
     async fn set(&self, key: &str, value: &[u8]) -> Result<(), Error> {
         self.set_impl(key, value).await
     }
 
-    #[tracing::instrument(skip(self))]
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
         let file = self.path(key);
         if !file.exists() {
@@ -75,7 +73,6 @@ impl DataStorage for FileLowLevelStorage {
         Ok(Some(buffer))
     }
 
-    #[tracing::instrument(skip(self))]
     async fn delete(&self, key: &str) -> Result<(), Error> {
         let file = self.path(key);
         if file.exists() {
@@ -84,13 +81,11 @@ impl DataStorage for FileLowLevelStorage {
         Ok(())
     }
 
-    #[tracing::instrument(skip(self))]
     async fn exists(&self, key: &str) -> Result<bool, Error> {
         let file = self.path(key);
         Ok(file.exists())
     }
 
-    #[tracing::instrument(skip(self))]
     async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error> {
         if self.exists(key).await? {
             return Ok(false);
