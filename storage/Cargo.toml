@@ -29,6 +29,8 @@ tokio = { workspace = true, features = ["fs", "io-util"], optional = true }
 
 etcd-client = { workspace = true, optional = true }
 
+tracing.workspace = true
+
 [features]
 default = []
 

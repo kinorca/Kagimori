@@ -13,8 +13,8 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::DataStorage;
 use crate::lowlevel::LowLevelStorage;
+use crate::{DataStorage, Error};
 use async_trait::async_trait;
 use std::sync::Arc;
 
@@ -61,7 +61,7 @@ impl LowLevelStorage for CompoundLowLevelStorage {}
 
 #[async_trait]
 impl DataStorage for CompoundLowLevelStorage {
-    async fn set(&self, key: &str, value: &[u8]) -> Result<(), crate::Error> {
+    async fn set(&self, key: &str, value: &[u8]) -> Result<(), Error> {
         for storage in &self.storages {
             storage.set(key, value).await?;
         }
@@ -69,7 +69,7 @@ impl DataStorage for CompoundLowLevelStorage {
         Ok(())
     }
 
-    async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, crate::Error> {
+    async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
         for storage in &self.storages {
             if let Some(value) = storage.get(key).await? {
                 return Ok(Some(value));
@@ -79,14 +79,14 @@ impl DataStorage for CompoundLowLevelStorage {
         Ok(None)
     }
 
-    async fn delete(&self, key: &str) -> Result<(), crate::Error> {
+    async fn delete(&self, key: &str) -> Result<(), Error> {
         for storage in &self.storages {
             storage.delete(key).await?;
         }
         Ok(())
     }
 
-    async fn exists(&self, key: &str) -> Result<bool, crate::Error> {
+    async fn exists(&self, key: &str) -> Result<bool, Error> {
         for storage in &self.storages {
             if storage.exists(key).await? {
                 return Ok(true);
@@ -94,5 +94,12 @@ impl DataStorage for CompoundLowLevelStorage {
         }
 
         Ok(false)
+    }
+
+    async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error> {
+        for storage in &self.storages {
+            storage.set_if_absent(key, value).await?;
+        }
+        Ok(true)
     }
 }

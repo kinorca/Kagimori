@@ -26,5 +26,9 @@ chrono.workspace = true
 
 prost.workspace = true
 
+uuid = { workspace = true, features = ["v4"] }
+
+tracing.workspace = true
+
 [build-dependencies]
 prost-build.workspace = true

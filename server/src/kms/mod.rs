@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::debug_log::DebugLog;
 use crate::proto::kubernetes::kms::v2::key_management_service_server::KeyManagementService;
 use crate::proto::kubernetes::kms::v2::{
     DecryptRequest, DecryptResponse, EncryptRequest, EncryptResponse, StatusRequest, StatusResponse,
@@ -23,9 +24,11 @@ use std::collections::HashMap;
 use tonic::{Request, Response, Status, async_trait};
 use uuid::Uuid;
 
+const KMS_SERVICE_NAME: &str = "kubernetes.io/kms/v2";
+const KEY_VERSION_KEY: &str = "kagimori.kinorca.com/key-version";
+
 pub(crate) struct KmsService<S, L> {
     encryptor: Encryptor<S, L>,
-    key_id: String,
 }
 
 impl<S, L> KmsService<S, L>
@@ -33,8 +36,8 @@ where
     S: DataStorage,
     L: AuditLogger,
 {
-    pub fn new(encryptor: Encryptor<S, L>, key_id: String) -> Self {
-        Self { encryptor, key_id }
+    pub fn new(encryptor: Encryptor<S, L>) -> Self {
+        Self { encryptor }
     }
 }
 
@@ -52,10 +55,16 @@ where
         &self,
         _request: Request<StatusRequest>,
     ) -> Result<Response<StatusResponse>, Status> {
+        let kid = self
+            .encryptor
+            .get_key_id(KMS_SERVICE_NAME)
+            .await
+            .debug_log()
+            .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
         Ok(Response::new(StatusResponse {
             version: "v2".to_string(),
             healthz: "ok".to_string(),
-            key_id: self.key_id.clone(),
+            key_id: kid,
         }))
     }
 
@@ -66,7 +75,7 @@ where
         let req = request.into_inner();
         let version = u64::from_le_bytes(
             req.annotations
-                .get("kagimori.kinorca.com/key-version")
+                .get(KEY_VERSION_KEY)
                 .ok_or(Status::invalid_argument("missing key version"))?
                 .as_slice()
                 .try_into()
@@ -77,7 +86,7 @@ where
             .decrypt(
                 RequestInfo {
                     event_id: Uuid::now_v7().to_string(),
-                    service: "KMSv2".to_string(),
+                    service: KMS_SERVICE_NAME.to_string(),
                     user: req.uid,
                     data_key: None,
                 },
@@ -88,6 +97,7 @@ where
                 },
             )
             .await
+            .debug_log()
             .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
         Ok(Response::new(DecryptResponse { plaintext }))
     }
@@ -103,21 +113,21 @@ where
             .encrypt(
                 RequestInfo {
                     event_id: Uuid::now_v7().to_string(),
-                    service: "KMSv2".to_string(),
+                    service: KMS_SERVICE_NAME.to_string(),
                     user: req.uid,
                     data_key: None,
                 },
-                &self.key_id,
                 &req.plaintext,
             )
             .await
+            .debug_log()
             .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
 
         Ok(Response::new(EncryptResponse {
             ciphertext: ciphertext.ciphertext,
             key_id: ciphertext.key_id,
             annotations: HashMap::from([(
-                "kagimori.kinorca.com/key-version".to_string(),
+                KEY_VERSION_KEY.to_string(),
                 ciphertext.version.to_le_bytes().to_vec(),
             )]),
         }))

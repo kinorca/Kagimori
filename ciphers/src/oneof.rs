@@ -35,6 +35,14 @@ impl Cipher for OneOfCipher {
         }
     }
 
+    fn key(&self) -> Vec<u8> {
+        match self {
+            OneOfCipher::Unencrypted(c) => c.key(),
+            OneOfCipher::AesGcmSiv(c) => c.key(),
+            OneOfCipher::ChaCha20Poly1305(c) => c.key(),
+        }
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         match self {
             OneOfCipher::Unencrypted(c) => c.encrypt(data).await,

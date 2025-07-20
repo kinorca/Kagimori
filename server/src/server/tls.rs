@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::debug_log::DebugLog;
 use crate::server::KagimoriServer;
 use audit_log::AuditLogger;
 use encryption::DataStorage;
@@ -55,7 +56,8 @@ where
     L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> std::io::Result<()> {
-        let listener = TcpListener::bind(self.listen).await?;
+        info!("Listening on: tcp://{} (using TLS)", self.listen);
+        let listener = TcpListener::bind(self.listen).await.debug_log()?;
         let tls_acceptor = TlsAcceptor::from(Arc::new(self.config));
 
         let svc = self.inner.create_service();

@@ -34,8 +34,8 @@ pub(crate) struct Args {
     pub listen: String,
 
     // KMS v2
-    #[arg(long, help = "Key ID for Kubernetes KMS v2")]
-    pub kms_v2_key_id: Option<String>,
+    #[arg(long, help = "Enable Kubernetes KMS v2")]
+    pub kms_v2: bool,
 
     // TLS
     #[arg(long, help = "Path to TLS certificate PEM file")]
@@ -61,7 +61,7 @@ pub(crate) struct Args {
     )]
     pub storage_directory: String,
 
-    #[arg(long, help = "Storage type", default_value = "File")]
+    #[arg(long, help = "Storage type", default_value = "file")]
     pub storage: StorageType,
 }
 

@@ -26,4 +26,5 @@ pub trait DataStorage: Send + Sync {
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error>;
     async fn delete(&self, key: &str) -> Result<(), Error>;
     async fn exists(&self, key: &str) -> Result<bool, Error>;
+    async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error>;
 }

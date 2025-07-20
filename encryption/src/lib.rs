@@ -85,13 +85,13 @@ where
     S: DataStorage,
     L: AuditLogger,
 {
-    pub async fn encrypt(
-        &self,
-        request: RequestInfo,
-        key_id: &str,
-        data: &[u8],
-    ) -> Result<Ciphertext, Error> {
-        let (cipher, er) = self.get_latest_cipher(key_id).await?;
+    pub async fn get_key_id(&self, service: &str) -> Result<String, Error> {
+        let (_cipher, er) = self.get_latest_cipher_for_service(service).await?;
+        Ok(er.id)
+    }
+
+    pub async fn encrypt(&self, request: RequestInfo, data: &[u8]) -> Result<Ciphertext, Error> {
+        let (cipher, er) = self.get_latest_cipher_for_service(&request.service).await?;
         let ciphertext = cipher.encrypt(data).await.map_err(Error::from)?;
 
         self.audit_logger
@@ -103,13 +103,13 @@ where
                 action: Action::Encryption(EncryptionAction {
                     data_key: request.data_key,
                     algorithm: cipher.name().to_string(),
-                    key_id: key_id.to_string(),
+                    key_id: er.id.to_string(),
                 }),
             })
             .await;
 
         Ok(Ciphertext {
-            key_id: key_id.to_string(),
+            key_id: er.id,
             version: er.version,
             ciphertext,
         })

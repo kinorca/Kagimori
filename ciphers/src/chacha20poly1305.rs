@@ -33,6 +33,12 @@ impl ChaCha20Poly1305Cipher {
     }
 }
 
+impl Default for ChaCha20Poly1305Cipher {
+    fn default() -> Self {
+        Self::new(ChaCha20Poly1305::generate_key(&mut OsRng))
+    }
+}
+
 impl TryFrom<Vec<u8>> for ChaCha20Poly1305Cipher {
     type Error = Error;
 
@@ -50,6 +56,11 @@ impl Cipher for ChaCha20Poly1305Cipher {
     fn name(&self) -> &'static str {
         "ChaCha20-Poly1305"
     }
+
+    fn key(&self) -> Vec<u8> {
+        self.key.to_vec()
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let cipher = ChaCha20Poly1305::new(&self.key);
         let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);

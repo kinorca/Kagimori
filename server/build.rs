@@ -13,8 +13,21 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
+use std::env::var;
+use std::path::PathBuf;
+
 fn main() {
-    tonic_build::configure()
+    let mut builder = tonic_build::configure()
+        .build_server(true)
+        .build_client(false);
+    #[cfg(feature = "reflection")]
+    {
+        builder = builder.file_descriptor_set_path(
+            PathBuf::from(var("OUT_DIR").unwrap()).join("kagimori_descriptor.bin"),
+        );
+    }
+
+    builder
         .compile_protos(&["proto/kagimori.proto", "proto/api.proto"], &["proto"])
         .unwrap();
 }

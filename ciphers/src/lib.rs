@@ -28,6 +28,7 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait Cipher: Send + Sync {
     fn name(&self) -> &'static str;
+    fn key(&self) -> Vec<u8>;
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error>;
 }
@@ -39,6 +40,10 @@ pub struct Unencrypted;
 impl Cipher for Unencrypted {
     fn name(&self) -> &'static str {
         "Unencrypted"
+    }
+
+    fn key(&self) -> Vec<u8> {
+        Vec::new()
     }
 
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {

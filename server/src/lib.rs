@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
+mod debug_log;
 mod kms;
 mod proto;
 mod server;

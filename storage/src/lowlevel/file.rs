@@ -18,6 +18,7 @@ use crate::{DataStorage, Error};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct FileLowLevelStorage {
@@ -34,7 +35,21 @@ impl FileLowLevelStorage {
     }
 
     fn path(&self, key: &str) -> PathBuf {
-        self.directory.join(key)
+        self.directory.join(key.strip_prefix('/').unwrap_or(key))
+    }
+
+    async fn set_impl(&self, key: &str, value: &[u8]) -> Result<(), Error> {
+        let file = self.path(key);
+        if let Some(parent) = file.parent() {
+            debug!(
+                "create parent directory: {}",
+                file.to_str().unwrap_or("???")
+            );
+            tokio::fs::create_dir_all(parent).await.map_err(Error::Io)?;
+        }
+        debug!("create file: {}", file.to_str().unwrap_or("???"));
+        let mut file = tokio::fs::File::create(&file).await.map_err(Error::Io)?;
+        file.write_all(value).await.map_err(Error::Io)
     }
 }
 
@@ -42,13 +57,12 @@ impl LowLevelStorage for FileLowLevelStorage {}
 
 #[async_trait]
 impl DataStorage for FileLowLevelStorage {
+    #[tracing::instrument(skip(self))]
     async fn set(&self, key: &str, value: &[u8]) -> Result<(), Error> {
-        let file = self.path(key);
-        let file = tokio::fs::File::create(&file).await.map_err(Error::Io)?;
-        let mut writer = tokio::io::BufWriter::new(file);
-        writer.write_all(value).await.map_err(Error::Io)
+        self.set_impl(key, value).await
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get(&self, key: &str) -> Result<Option<Vec<u8>>, Error> {
         let file = self.path(key);
         if !file.exists() {
@@ -61,6 +75,7 @@ impl DataStorage for FileLowLevelStorage {
         Ok(Some(buffer))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn delete(&self, key: &str) -> Result<(), Error> {
         let file = self.path(key);
         if file.exists() {
@@ -69,8 +84,17 @@ impl DataStorage for FileLowLevelStorage {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn exists(&self, key: &str) -> Result<bool, Error> {
         let file = self.path(key);
         Ok(file.exists())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error> {
+        if self.exists(key).await? {
+            return Ok(false);
+        }
+        self.set_impl(key, value).await.map(|_| true)
     }
 }

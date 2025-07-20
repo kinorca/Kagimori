@@ -20,6 +20,8 @@ edition.workspace = true
 
 [dependencies]
 tonic = { workspace = true, features = ["tls-ring"] }
+tonic-reflection = { workspace = true, optional = true }
+
 prost.workspace = true
 encryption.workspace = true
 audit-log.workspace = true
@@ -38,3 +40,6 @@ tracing.workspace = true
 
 [build-dependencies]
 tonic-build.workspace = true
+
+[features]
+reflection = ["dep:tonic-reflection"]

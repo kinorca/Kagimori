@@ -78,4 +78,8 @@ where
     async fn exists(&self, key: &str) -> Result<bool, Error> {
         self.inner.exists(key).await
     }
+
+    async fn set_if_absent(&self, key: &str, value: &[u8]) -> Result<bool, Error> {
+        self.inner.set_if_absent(key, value).await
+    }
 }

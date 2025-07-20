@@ -34,21 +34,21 @@ pub use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 
 pub struct KagimoriServer<S, L> {
     encryptor: Encryptor<S, L>,
-    kms_v2_key_id: Option<String>,
+    kms_v2_enabled: bool,
 }
 
 impl<S, L> KagimoriServer<S, L> {
     pub fn new(encryptor: Encryptor<S, L>) -> Self {
         Self {
             encryptor,
-            kms_v2_key_id: None,
+            kms_v2_enabled: false,
         }
     }
 }
 
 impl<S, L> KagimoriServer<S, L> {
-    pub fn enable_kms_v2(mut self, key_id: String) -> Self {
-        self.kms_v2_key_id = Some(key_id);
+    pub fn enable_kms_v2(mut self) -> Self {
+        self.kms_v2_enabled = true;
         self
     }
 }
@@ -80,21 +80,29 @@ impl<S, L> KagimoriServer<S, L> {
 
 impl<S, L> KagimoriServer<S, L>
 where
-    S: 'static,
-    S: DataStorage,
-    S: Clone,
-    L: 'static,
-    L: AuditLogger,
-    L: Clone,
+    S: 'static + DataStorage + Clone,
+    L: 'static + AuditLogger + Clone,
 {
     fn create_service(self) -> Routes {
         let mut routes = Routes::default();
-        if let Some(kid) = self.kms_v2_key_id {
+        if self.kms_v2_enabled {
             routes = routes.add_service(KeyManagementServiceServer::new(KmsService::new(
                 self.encryptor.clone(),
-                kid,
             )));
         }
+
+        #[cfg(feature = "reflection")]
+        {
+            routes = routes.add_service(
+                tonic_reflection::server::Builder::configure()
+                    .register_encoded_file_descriptor_set(tonic::include_file_descriptor_set!(
+                        "kagimori_descriptor"
+                    ))
+                    .build_v1()
+                    .unwrap(),
+            );
+        }
+
         routes
     }
 }

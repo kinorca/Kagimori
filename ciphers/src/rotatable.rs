@@ -42,6 +42,10 @@ impl Cipher for RotatableCipher {
         self.default_cipher.name()
     }
 
+    fn key(&self) -> Vec<u8> {
+        self.default_cipher.key()
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let ciphertext = self.default_cipher.encrypt(data).await?;
 
@@ -60,4 +64,9 @@ impl Cipher for RotatableCipher {
             .ok_or(Error::KeyNotFound(key_id))?;
         cipher.decrypt(ciphertext).await
     }
+}
+
+#[cfg(test)]
+mod test {
+    // TODO
 }

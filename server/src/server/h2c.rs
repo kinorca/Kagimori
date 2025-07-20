@@ -13,11 +13,13 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
+use crate::debug_log::DebugLog;
 use crate::server::KagimoriServer;
 use audit_log::AuditLogger;
 use encryption::DataStorage;
 use std::net::SocketAddr;
 use tonic::transport::Server;
+use tracing::info;
 
 pub struct KagimoriH2cServer<S, L> {
     inner: KagimoriServer<S, L>,
@@ -37,7 +39,12 @@ where
 {
     pub async fn run(self) -> Result<(), tonic::transport::Error> {
         let svc = self.inner.create_service();
-        Server::builder().add_routes(svc).serve(self.listen).await?;
+        info!("Listening on: tcp://{}", self.listen);
+        Server::builder()
+            .add_routes(svc)
+            .serve(self.listen)
+            .await
+            .debug_log()?;
         Ok(())
     }
 }

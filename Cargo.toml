@@ -34,8 +34,11 @@ tokio-rustls = "0.26.2"
 # gRPC / protobuf
 tonic = "0.13.1"
 tonic-build = "0.13.1"
+tonic-reflection = "0.13.1"
+
 hyper = "1.6.0"
 hyper-util = "0.1.15"
+
 tower = "0.5.2"
 tower-http = "0.6.6"
 
@@ -79,11 +82,11 @@ edition.workspace = true
 ciphers.workspace = true
 storage = { workspace = true, features = ["full"] }
 encryption.workspace = true
-server.workspace = true
+server = { workspace = true, features = ["reflection"] }
 audit-log.workspace = true
 
 tracing.workspace = true
-tracing-subscriber.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter", "std"] }
 
 tokio = { workspace = true, features = ["full"] }
 

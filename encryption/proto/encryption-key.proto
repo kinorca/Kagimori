@@ -34,3 +34,7 @@ message EncryptionKeyRef {
   string id = 1;
   uint64 version = 2;
 }
+
+message EncryptionKeyForService {
+  string id = 1;
+}

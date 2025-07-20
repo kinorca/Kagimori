@@ -18,6 +18,11 @@ syntax = "proto3";
 
 package kinorca.kagimori.v1;
 
+option java_multiple_files = true;
+option java_package = "com.kinorca.kagimori.protobuf.v1";
+
+option csharp_namespace = "Kinorca.Kagimori.Protobuf.V1";
+
 option go_package = "github.com/kinorca/kagimori/v1";
 
 service KagimoriKeyManagementService {

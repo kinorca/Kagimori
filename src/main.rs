@@ -29,14 +29,21 @@ use storage::lowlevel::LowLevelStorage;
 use storage::lowlevel::etcd::{Client, EtcdLowLevelStorage};
 use storage::lowlevel::file::FileLowLevelStorage;
 use tracing::{debug, info};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::{Layer, layer};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::registry()
+        .with(Layer::new())
+        .with(EnvFilter::from_env("LOG_LEVEL"))
+        .init();
 
-    info!("Kagimori {VERSION} (Licensed under GNU GPL v3)");
+    info!("Kagimori {VERSION} (Licensed under the GNU General Public License v3)");
 
     let args = Args::parse();
     debug!("Command line arguments: {args:?}");
@@ -80,8 +87,8 @@ where
     let encryptor = Encryptor::new(storage, audit_logger);
 
     let mut server = KagimoriServer::new(encryptor);
-    if let Some(key_id) = args.kms_v2_key_id {
-        server = server.enable_kms_v2(key_id);
+    if args.kms_v2 {
+        server = server.enable_kms_v2();
     }
     if let Some(sock_addr) = args.listen.strip_prefix("tcp://") {
         if let Some(cert) = args.tls_certificate

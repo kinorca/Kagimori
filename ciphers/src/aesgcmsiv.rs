@@ -50,6 +50,10 @@ impl Cipher for AesGcmSivCipher {
         "AES-GCM-SIV"
     }
 
+    fn key(&self) -> Vec<u8> {
+        self.key.to_vec()
+    }
+
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, crate::error::Error> {
         let cipher = Aes256SivAead::new(&self.key);
         let nonce = Aes256SivAead::generate_nonce(&mut OsRng);
