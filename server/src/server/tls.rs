@@ -16,7 +16,6 @@
 use crate::debug_log::DebugLog;
 use crate::server::KagimoriServer;
 use audit_log::AuditLogger;
-use encryption::DataStorage;
 use hyper::http;
 use hyper::server::conn::http2::Builder;
 use hyper_util::rt::{TokioExecutor, TokioIo};
@@ -30,18 +29,14 @@ use tonic::body::Body;
 use tower::ServiceExt;
 use tracing::{error, info};
 
-pub struct KagimoriTlsServer<S, L> {
-    inner: KagimoriServer<S, L>,
+pub struct KagimoriTlsServer<L> {
+    inner: KagimoriServer<L>,
     config: ServerConfig,
     listen: SocketAddr,
 }
 
-impl<S, L> KagimoriTlsServer<S, L> {
-    pub(super) fn new(
-        inner: KagimoriServer<S, L>,
-        config: ServerConfig,
-        listen: SocketAddr,
-    ) -> Self {
+impl<L> KagimoriTlsServer<L> {
+    pub(super) fn new(inner: KagimoriServer<L>, config: ServerConfig, listen: SocketAddr) -> Self {
         Self {
             inner,
             config,
@@ -50,9 +45,8 @@ impl<S, L> KagimoriTlsServer<S, L> {
     }
 }
 
-impl<S, L> KagimoriTlsServer<S, L>
+impl<L> KagimoriTlsServer<L>
 where
-    S: 'static + DataStorage + Clone,
     L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> std::io::Result<()> {

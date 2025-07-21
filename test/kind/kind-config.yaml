@@ -6,6 +6,8 @@ nodes:
     extraMounts:
       - hostPath: /tmp/kagimori.sock
         containerPath: /tmp/kagimori.sock
+      - hostPath: ./encryption-config.yaml
+        containerPath: /etc/kubernetes/encryption-config.yaml
     kubeadmConfigPatches:
       - |
         apiVersion: kubeadm.k8s.io/v1beta3
@@ -14,8 +16,7 @@ nodes:
           extraArgs:
             encryption-provider-config: /etc/kubernetes/encryption-config.yaml
           extraVolumes:
-            - name: encryption-config
-              hostPath: ./encryption-config.yaml
-              mountPath: /etc/kubernetes/encryption-config.yaml
+            - name: socket-kmsv2-kagimori
+              hostPath: /tmp/kagimori.sock
+              mountPath: /tmp/kagimori.sock
               pathType: File
-              readOnly: true

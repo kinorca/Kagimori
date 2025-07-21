@@ -21,7 +21,7 @@ use crate::kms::KmsService;
 use crate::proto::kubernetes::kms::v2::key_management_service_server::KeyManagementServiceServer;
 use crate::server::h2c::KagimoriH2cServer;
 use crate::server::tls::KagimoriTlsServer;
-use encryption::{DataStorage, Encryptor};
+use encryption::Encryptor;
 use std::net::SocketAddr;
 use std::path::Path;
 use tokio_rustls::rustls::ServerConfig;
@@ -32,13 +32,13 @@ use audit_log::AuditLogger;
 pub use tokio_rustls::rustls::pki_types::pem::PemObject;
 pub use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 
-pub struct KagimoriServer<S, L> {
-    encryptor: Encryptor<S, L>,
+pub struct KagimoriServer<L> {
+    encryptor: Encryptor<L>,
     kms_v2_enabled: bool,
 }
 
-impl<S, L> KagimoriServer<S, L> {
-    pub fn new(encryptor: Encryptor<S, L>) -> Self {
+impl<L> KagimoriServer<L> {
+    pub fn new(encryptor: Encryptor<L>) -> Self {
         Self {
             encryptor,
             kms_v2_enabled: false,
@@ -46,20 +46,20 @@ impl<S, L> KagimoriServer<S, L> {
     }
 }
 
-impl<S, L> KagimoriServer<S, L> {
+impl<L> KagimoriServer<L> {
     pub fn enable_kms_v2(mut self) -> Self {
         self.kms_v2_enabled = true;
         self
     }
 }
 
-impl<S, L> KagimoriServer<S, L> {
+impl<L> KagimoriServer<L> {
     pub fn bind_tls(
         self,
         listen: SocketAddr,
         certificate: Vec<CertificateDer>,
         private_key: PrivateKeyDer,
-    ) -> Result<KagimoriTlsServer<S, L>, tokio_rustls::rustls::Error> {
+    ) -> Result<KagimoriTlsServer<L>, tokio_rustls::rustls::Error> {
         let config = ServerConfig::builder()
             .with_no_client_auth()
             .with_single_cert(
@@ -69,18 +69,17 @@ impl<S, L> KagimoriServer<S, L> {
         Ok(KagimoriTlsServer::new(self, config, listen))
     }
 
-    pub fn bind(self, listen: SocketAddr) -> KagimoriH2cServer<S, L> {
+    pub fn bind(self, listen: SocketAddr) -> KagimoriH2cServer<L> {
         KagimoriH2cServer::new(self, listen)
     }
 
-    pub fn bind_uds(self, path: impl AsRef<Path>) -> KagimoriUnixDomainSocketServer<S, L> {
+    pub fn bind_uds(self, path: impl AsRef<Path>) -> KagimoriUnixDomainSocketServer<L> {
         KagimoriUnixDomainSocketServer::new(self, path.as_ref().to_path_buf())
     }
 }
 
-impl<S, L> KagimoriServer<S, L>
+impl<L> KagimoriServer<L>
 where
-    S: 'static + DataStorage + Clone,
     L: 'static + AuditLogger + Clone,
 {
     fn create_service(self) -> Routes {

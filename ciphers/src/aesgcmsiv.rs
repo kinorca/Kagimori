@@ -13,11 +13,12 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::Cipher;
+use crate::{Cipher, Error};
 use aes_siv::aead::generic_array::typenum::Unsigned;
 use aes_siv::aead::{Aead, OsRng};
 use aes_siv::{AeadCore, Aes256SivAead, Key, KeyInit, KeySizeUser};
 use async_trait::async_trait;
+use chacha20poly1305::ChaCha20Poly1305;
 
 #[derive(Clone)]
 pub struct AesGcmSivCipher {
@@ -30,17 +31,29 @@ impl AesGcmSivCipher {
     }
 }
 
+impl Default for AesGcmSivCipher {
+    fn default() -> Self {
+        Self::new(Aes256SivAead::generate_key(&mut OsRng))
+    }
+}
+
+impl TryFrom<&[u8]> for AesGcmSivCipher {
+    type Error = Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
+            Err(Error::InvalidKeyLength)
+        } else {
+            Ok(Self::new(Key::<Aes256SivAead>::clone_from_slice(value)))
+        }
+    }
+}
+
 impl TryFrom<Vec<u8>> for AesGcmSivCipher {
-    type Error = crate::error::Error;
+    type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.len() != <Aes256SivAead as KeySizeUser>::KeySize::USIZE {
-            Err(Self::Error::InvalidKeyLength)
-        } else {
-            Ok(Self::new(Key::<Aes256SivAead>::clone_from_slice(
-                value.as_slice(),
-            )))
-        }
+        Self::try_from(value.as_slice())
     }
 }
 
@@ -50,17 +63,15 @@ impl Cipher for AesGcmSivCipher {
         "AES-GCM-SIV"
     }
 
-    fn key(&self) -> Vec<u8> {
-        self.key.to_vec()
+    fn key(&self) -> &[u8] {
+        &self.key
     }
 
-    async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, crate::error::Error> {
+    async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let cipher = Aes256SivAead::new(&self.key);
         let nonce = Aes256SivAead::generate_nonce(&mut OsRng);
 
-        let encrypted_data = cipher
-            .encrypt(&nonce, data)
-            .map_err(crate::error::Error::AesGcmSiv)?;
+        let encrypted_data = cipher.encrypt(&nonce, data).map_err(Error::AesGcmSiv)?;
 
         let mut result = Vec::with_capacity(nonce.len() + encrypted_data.len());
         result.extend_from_slice(nonce.as_ref());
@@ -69,14 +80,14 @@ impl Cipher for AesGcmSivCipher {
         Ok(result)
     }
 
-    async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, crate::error::Error> {
+    async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let nonce_size = <Aes256SivAead as AeadCore>::NonceSize::USIZE;
         let nonce = aes_siv::Nonce::from_slice(&data[..nonce_size]);
 
         let cipher = Aes256SivAead::new(&self.key);
         cipher
             .decrypt(nonce, &data[nonce_size..])
-            .map_err(crate::error::Error::AesGcmSiv)
+            .map_err(Error::AesGcmSiv)
     }
 }
 

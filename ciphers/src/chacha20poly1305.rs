@@ -39,15 +39,23 @@ impl Default for ChaCha20Poly1305Cipher {
     }
 }
 
+impl TryFrom<&[u8]> for ChaCha20Poly1305Cipher {
+    type Error = Error;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
+            Err(Error::InvalidKeyLength)
+        } else {
+            Ok(Self::new(Key::clone_from_slice(value)))
+        }
+    }
+}
+
 impl TryFrom<Vec<u8>> for ChaCha20Poly1305Cipher {
     type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
-            Err(Error::InvalidKeyLength)
-        } else {
-            Ok(Self::new(Key::clone_from_slice(value.as_slice())))
-        }
+        Self::try_from(value.as_slice())
     }
 }
 
@@ -57,8 +65,8 @@ impl Cipher for ChaCha20Poly1305Cipher {
         "ChaCha20-Poly1305"
     }
 
-    fn key(&self) -> Vec<u8> {
-        self.key.to_vec()
+    fn key(&self) -> &[u8] {
+        &self.key
     }
 
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {

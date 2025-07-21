@@ -16,21 +16,17 @@
 mod args;
 mod master_key;
 
-use crate::args::{Args, StorageType};
+use crate::args::{Args, CipherAlgorithm};
 use audit_log::AuditLogger;
 use audit_log::logger::tracing::TracingAuditLogger;
-use ciphers::Cipher;
+use ciphers::rotatable::RotatableCipher;
 use clap::Parser;
-use encryption::Encryptor;
+use encryption::{Encryptor, KeyAlgorithm};
 use server::{CertificateDer, KagimoriServer, PemObject, PrivateKeyDer};
 use std::path::Path;
-use storage::crypto::CryptedStorage;
-use storage::lowlevel::LowLevelStorage;
-use storage::lowlevel::etcd::{Client, EtcdLowLevelStorage};
-use storage::lowlevel::file::FileLowLevelStorage;
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::{Layer, layer};
+use tracing_subscriber::fmt::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -51,40 +47,23 @@ async fn main() {
     let logger = TracingAuditLogger;
 
     let cipher = args.create_master_key().into_cipher();
-    match args.storage {
-        StorageType::Etcd => {
-            run_server(
-                cipher,
-                EtcdLowLevelStorage::new(
-                    Client::connect(args.storage_etcd_endpoints.as_slice(), None)
-                        .await
-                        .unwrap(),
-                ),
-                logger,
-                args,
-            )
-            .await;
-        }
-        StorageType::File => {
-            run_server(
-                cipher,
-                FileLowLevelStorage::new(args.storage_directory.as_str()).unwrap(),
-                logger,
-                args,
-            )
-            .await;
-        }
-    }
+
+    run_server(cipher, logger, args).await;
 }
 
-async fn run_server<C, S, L>(cipher: C, lls: S, audit_logger: L, args: Args)
+async fn run_server<L>(cipher: RotatableCipher, audit_logger: L, args: Args)
 where
-    C: 'static + Cipher + Clone,
-    S: 'static + LowLevelStorage + Clone,
     L: 'static + AuditLogger + Clone,
 {
-    let storage = CryptedStorage::new(cipher, lls);
-    let encryptor = Encryptor::new(storage, audit_logger);
+    let encryptor = Encryptor::new(
+        audit_logger,
+        match args.dek_algorithm {
+            CipherAlgorithm::Chacha20Poly1305 => KeyAlgorithm::ChaCha20Poly1305,
+            CipherAlgorithm::AesGcmSiv => KeyAlgorithm::AesGcmSiv,
+        },
+        cipher.default_key_id(),
+        cipher,
+    );
 
     let mut server = KagimoriServer::new(encryptor);
     if args.kms_v2 {

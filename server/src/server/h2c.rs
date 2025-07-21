@@ -16,25 +16,23 @@
 use crate::debug_log::DebugLog;
 use crate::server::KagimoriServer;
 use audit_log::AuditLogger;
-use encryption::DataStorage;
 use std::net::SocketAddr;
 use tonic::transport::Server;
 use tracing::info;
 
-pub struct KagimoriH2cServer<S, L> {
-    inner: KagimoriServer<S, L>,
+pub struct KagimoriH2cServer<L> {
+    inner: KagimoriServer<L>,
     listen: SocketAddr,
 }
 
-impl<S, L> KagimoriH2cServer<S, L> {
-    pub(super) fn new(inner: KagimoriServer<S, L>, listen: SocketAddr) -> Self {
+impl<L> KagimoriH2cServer<L> {
+    pub(super) fn new(inner: KagimoriServer<L>, listen: SocketAddr) -> Self {
         Self { inner, listen }
     }
 }
 
-impl<S, L> KagimoriH2cServer<S, L>
+impl<L> KagimoriH2cServer<L>
 where
-    S: 'static + DataStorage + Clone,
     L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> Result<(), tonic::transport::Error> {

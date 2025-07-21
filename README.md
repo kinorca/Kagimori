@@ -9,6 +9,7 @@ Kagimori is simple Key Management System.
 - **KMSv2**: Compatible with Kubernetes KMS v2.
 - **Encryption / Decryption**: Encrypt or decrypt data.
   - **Supported Algorithms**: ChaCha20-Poly1305, AES-GCM-SIV
+- **Envelope Encryption**: Plaintext DEK is not leaked out.
 - **Audit logs**: Save audit logs.
 
 ## License
@@ -23,4 +24,4 @@ See the [LICENSE](./LICENSE) file for details.
 Protocol Buffers definition files using for APIs in this project are licensed under the **Apache License 2.0**.
 See the [API_LICENSE](./API_LICENSE) file for details.
 
-Copyright 2025 SiLeader and Kinorca
+Copyright 2025 SiLeader and Kinorca.

@@ -19,16 +19,10 @@ version = "0.1.0"
 edition.workspace = true
 
 [dependencies]
-storage.workspace = true
 ciphers.workspace = true
 audit-log.workspace = true
 chrono.workspace = true
 
-prost.workspace = true
-
 uuid = { workspace = true, features = ["v4"] }
 
 tracing.workspace = true
-
-[build-dependencies]
-prost-build.workspace = true

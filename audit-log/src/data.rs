@@ -30,11 +30,6 @@ pub struct AuditLog {
 pub enum Action {
     Encryption(EncryptionAction),
     Decryption(DecryptionAction),
-    KeyRotation(KeyRotationAction),
-    KeyDeletion(KeyDeletionAction),
-    KeyCreation(KeyCreationAction),
-    Signing(SigningAction),
-    Verification(VerificationAction),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,7 +37,6 @@ pub enum Action {
 pub struct EncryptionAction {
     pub data_key: Option<String>,
     pub algorithm: String,
-    pub key_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,42 +44,4 @@ pub struct EncryptionAction {
 pub struct DecryptionAction {
     pub data_key: Option<String>,
     pub algorithm: String,
-    pub key_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyRotationAction {
-    pub algorithm: String,
-    pub key_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyDeletionAction {
-    pub algorithm: String,
-    pub key_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct KeyCreationAction {
-    pub algorithm: String,
-    pub key_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SigningAction {
-    pub data_key: Option<String>,
-    pub algorithm: String,
-    pub key_id: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VerificationAction {
-    pub data_key: Option<String>,
-    pub algorithm: String,
-    pub key_id: String,
 }

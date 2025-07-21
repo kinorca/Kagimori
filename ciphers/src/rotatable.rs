@@ -36,6 +36,10 @@ impl RotatableCipher {
             ciphers,
         }
     }
+
+    pub fn default_key_id(&self) -> String {
+        self.default_key_id.to_string()
+    }
 }
 
 #[async_trait]
@@ -44,7 +48,7 @@ impl Cipher for RotatableCipher {
         self.default_cipher.name()
     }
 
-    fn key(&self) -> Vec<u8> {
+    fn key(&self) -> &[u8] {
         self.default_cipher.key()
     }
 

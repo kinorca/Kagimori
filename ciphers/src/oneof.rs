@@ -35,7 +35,7 @@ impl Cipher for OneOfCipher {
         }
     }
 
-    fn key(&self) -> Vec<u8> {
+    fn key(&self) -> &[u8] {
         match self {
             OneOfCipher::Unencrypted(c) => c.key(),
             OneOfCipher::AesGcmSiv(c) => c.key(),

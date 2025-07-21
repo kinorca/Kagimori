@@ -18,9 +18,9 @@ use clap::{Parser, ValueEnum};
 use std::fs::File;
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
-pub(crate) enum StorageType {
-    Etcd,
-    File,
+pub(crate) enum CipherAlgorithm {
+    Chacha20Poly1305,
+    AesGcmSiv,
 }
 
 #[derive(Debug, Parser)]
@@ -47,22 +47,9 @@ pub(crate) struct Args {
     #[arg(long, help = "Path to master key configuration file")]
     pub master_key: String,
 
-    // storage
-    #[arg(
-        long,
-        help = "Storage etcd endpoints (if --storage=etcd)",
-        value_delimiter = ','
-    )]
-    pub storage_etcd_endpoints: Vec<String>,
-    #[arg(
-        long,
-        help = "Storage directory (if --storage=file)",
-        default_value = "/var/lib/kagimori/storage"
-    )]
-    pub storage_directory: String,
-
-    #[arg(long, help = "Storage type", default_value = "file")]
-    pub storage: StorageType,
+    // DEK
+    #[arg(long, help = "DEK algorithm", default_value = "chacha20-poly1305")]
+    pub dek_algorithm: CipherAlgorithm,
 }
 
 impl Args {

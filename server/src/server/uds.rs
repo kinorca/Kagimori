@@ -1,27 +1,40 @@
+// Copyright 2025 SiLeader.
+//
+// This file is part of Kagimori.
+//
+// Kagimori is free software: you can redistribute it and/or modify it under the terms of
+// the GNU General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+//
+// Kagimori is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+// without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along with Kagimori.
+// If not, see <https://www.gnu.org/licenses/>.
+
 use crate::KagimoriServer;
 use crate::debug_log::DebugLog;
 use audit_log::AuditLogger;
-use encryption::DataStorage;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::net::UnixListener;
 use tonic::codegen::tokio_stream::wrappers::UnixListenerStream;
 use tonic::transport::Server;
-use tracing::{debug, error, info};
+use tracing::info;
 
-pub struct KagimoriUnixDomainSocketServer<S, L> {
-    inner: KagimoriServer<S, L>,
+pub struct KagimoriUnixDomainSocketServer<L> {
+    inner: KagimoriServer<L>,
     path: PathBuf,
 }
 
-impl<S, L> KagimoriUnixDomainSocketServer<S, L> {
-    pub(super) fn new(inner: KagimoriServer<S, L>, path: PathBuf) -> Self {
+impl<L> KagimoriUnixDomainSocketServer<L> {
+    pub(super) fn new(inner: KagimoriServer<L>, path: PathBuf) -> Self {
         Self { inner, path }
     }
 }
 
-impl<S, L> KagimoriUnixDomainSocketServer<S, L>
+impl<L> KagimoriUnixDomainSocketServer<L>
 where
-    S: 'static + DataStorage + Clone,
     L: 'static + AuditLogger + Clone,
 {
     pub async fn run(self) -> std::io::Result<()> {

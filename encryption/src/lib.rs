@@ -14,63 +14,70 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 mod key;
-mod proto;
 
 use audit_log::{Action, AuditLog, AuditLogger, DecryptionAction, EncryptionAction};
 use chrono::Utc;
 use ciphers::Cipher;
-pub use storage::DataStorage;
+use ciphers::rotatable::RotatableCipher;
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum Error {
-    Storage(storage::Error),
-    NotFound,
-    Decode(prost::DecodeError),
     UnsupportedAlgorithm,
-    InvalidCiphertext,
+    Encryption(ciphers::Error),
+    Decryption(ciphers::Error),
 }
 
-impl From<ciphers::Error> for Error {
-    fn from(err: ciphers::Error) -> Self {
-        Self::Storage(storage::Error::Cipher(err))
-    }
+#[derive(Debug, Copy, Clone)]
+pub enum KeyAlgorithm {
+    ChaCha20Poly1305,
+    AesGcmSiv,
 }
 
-pub struct Encryptor<S, L> {
-    storage: S,
+pub struct Encryptor<L> {
     audit_logger: L,
+    algorithm: KeyAlgorithm,
+    kek_id: String,
+    kek: RotatableCipher,
 }
 
-impl<S, L> Clone for Encryptor<S, L>
+impl<L> Clone for Encryptor<L>
 where
-    S: Clone,
     L: Clone,
 {
     fn clone(&self) -> Self {
         Self {
-            storage: self.storage.clone(),
             audit_logger: self.audit_logger.clone(),
+            algorithm: self.algorithm,
+            kek_id: self.kek_id.clone(),
+            kek: self.kek.clone(),
         }
     }
 }
 
-impl<S, L> Encryptor<S, L>
+impl<L> Encryptor<L>
 where
-    S: DataStorage,
     L: AuditLogger,
 {
-    pub fn new(storage: S, audit_logger: L) -> Self {
+    pub fn new(
+        audit_logger: L,
+        algorithm: KeyAlgorithm,
+        kek_id: String,
+        kek: RotatableCipher,
+    ) -> Self {
         Self {
-            storage,
             audit_logger,
+            algorithm,
+            kek_id,
+            kek,
         }
     }
 }
 
 pub struct Ciphertext {
-    pub key_id: String,
-    pub version: u64,
     pub ciphertext: Vec<u8>,
+    pub dek: Vec<u8>,
+    pub key_id: String,
 }
 
 pub struct RequestInfo {
@@ -80,19 +87,17 @@ pub struct RequestInfo {
     pub data_key: Option<String>,
 }
 
-impl<S, L> Encryptor<S, L>
+impl<L> Encryptor<L>
 where
-    S: DataStorage,
     L: AuditLogger,
 {
-    pub async fn get_key_id(&self, service: &str) -> Result<String, Error> {
-        let (_cipher, er) = self.get_latest_cipher_for_service(service).await?;
-        Ok(er.id)
+    pub fn get_key_id(&self) -> String {
+        self.kek_id.clone()
     }
 
     pub async fn encrypt(&self, request: RequestInfo, data: &[u8]) -> Result<Ciphertext, Error> {
-        let (cipher, er) = self.get_latest_cipher_for_service(&request.service).await?;
-        let ciphertext = cipher.encrypt(data).await.map_err(Error::from)?;
+        let (cipher, dek) = self.create_cipher().await?;
+        let ciphertext = cipher.encrypt(data).await.map_err(Error::Encryption)?;
 
         self.audit_logger
             .log(AuditLog {
@@ -103,15 +108,14 @@ where
                 action: Action::Encryption(EncryptionAction {
                     data_key: request.data_key,
                     algorithm: cipher.name().to_string(),
-                    key_id: er.id.to_string(),
                 }),
             })
             .await;
 
         Ok(Ciphertext {
-            key_id: er.id,
-            version: er.version,
             ciphertext,
+            dek,
+            key_id: Uuid::new_v4().to_string(),
         })
     }
 
@@ -120,14 +124,12 @@ where
         request: RequestInfo,
         ciphertext: Ciphertext,
     ) -> Result<Vec<u8>, Error> {
-        let cipher = self
-            .get_cipher(&ciphertext.key_id, ciphertext.version)
-            .await?;
+        let cipher = self.extract_cipher(&ciphertext.dek)?;
 
         let plaintext = cipher
             .decrypt(&ciphertext.ciphertext)
             .await
-            .map_err(Error::from)?;
+            .map_err(Error::Decryption)?;
 
         self.audit_logger
             .log(AuditLog {
@@ -138,7 +140,6 @@ where
                 action: Action::Decryption(DecryptionAction {
                     data_key: request.data_key,
                     algorithm: cipher.name().to_string(),
-                    key_id: ciphertext.key_id,
                 }),
             })
             .await;

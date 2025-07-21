@@ -13,154 +13,61 @@
 // You should have received a copy of the GNU General Public License along with Kagimori.
 // If not, see <https://www.gnu.org/licenses/>.
 
-use crate::proto::kagimori::encryption::key::v1::{
-    EncryptionKey, EncryptionKeyForService, EncryptionKeyRef, KeyAlgorithm,
-};
-use crate::{Encryptor, Error};
+use crate::{Encryptor, Error, KeyAlgorithm};
 use ciphers::Cipher;
 use ciphers::aesgcmsiv::AesGcmSivCipher;
 use ciphers::chacha20poly1305::ChaCha20Poly1305Cipher;
 use ciphers::oneof::OneOfCipher;
-use prost::Message;
-use storage::DataStorage;
-use tracing::debug;
-use uuid::Uuid;
 
-impl<S, L> Encryptor<S, L> {
-    fn latest_key(key_id: &str) -> String {
-        format!("/encryption/keys/{key_id}/latest")
-    }
-
-    fn key(key_id: &str, version: u64) -> String {
-        format!("/encryption/keys/{key_id}/versions/{version}")
-    }
-
-    fn key_for_service(service: &str) -> String {
-        format!("/encryption/services/{service}/keys/latest")
-    }
-}
-
-impl<S, L> Encryptor<S, L>
-where
-    S: DataStorage,
-{
-    async fn get_key(&self, key_id: &str, version: u64) -> Result<EncryptionKey, Error> {
-        let key = Self::key(key_id, version);
-        let key = self
-            .storage
-            .get(&key)
-            .await
-            .map_err(Error::Storage)?
-            .ok_or(Error::NotFound)?;
-        EncryptionKey::decode(key.as_slice()).map_err(Error::Decode)
-    }
-
-    async fn set_key(&self, service: &str, ek: EncryptionKey) -> Result<EncryptionKey, Error> {
-        let key = Self::key(ek.id.as_str(), ek.version);
-        self.storage
-            .set(&key, ek.encode_to_vec().as_slice())
-            .await
-            .map_err(Error::Storage)?;
-
-        let service_key = Self::key_for_service(service);
-        let is_put = self
-            .storage
-            .set_if_absent(
-                &service_key,
-                EncryptionKeyForService {
-                    id: ek.id.to_string(),
-                }
-                .encode_to_vec()
-                .as_slice(),
-            )
-            .await
-            .map_err(Error::Storage)?;
-
-        if is_put {
-            Ok(ek)
-        } else {
-            self.storage.delete(&key).await.map_err(Error::Storage)?;
-            self.get_key(&ek.id, ek.version).await
-        }
-    }
-
-    async fn get_key_for_service(
-        &self,
-        service: &str,
-    ) -> Result<Option<EncryptionKeyForService>, Error> {
-        let key = Self::key_for_service(service);
-        let key = self.storage.get(&key).await.map_err(Error::Storage)?;
-
-        match key {
-            None => Ok(None),
-            Some(key) => EncryptionKeyForService::decode(key.as_slice())
-                .map_err(Error::Decode)
-                .map(Some),
+impl KeyAlgorithm {
+    fn id(self) -> [u8; 2] {
+        match self {
+            KeyAlgorithm::ChaCha20Poly1305 => [0x00, 0x01],
+            KeyAlgorithm::AesGcmSiv => [0x00, 0x02],
         }
     }
 }
 
-impl<S, L> Encryptor<S, L>
-where
-    S: DataStorage,
-{
-    pub(crate) async fn get_cipher(
-        &self,
-        key_id: &str,
-        version: u64,
-    ) -> Result<OneOfCipher, Error> {
-        let key = self.get_key(key_id, version).await?;
-        match KeyAlgorithm::try_from(key.algorithm).map_err(|_| Error::UnsupportedAlgorithm)? {
-            KeyAlgorithm::Unknown => Err(Error::UnsupportedAlgorithm),
-            KeyAlgorithm::AesGcmSiv => Ok(OneOfCipher::AesGcmSiv(
-                AesGcmSivCipher::try_from(key.key).map_err(Error::from)?,
-            )),
-            KeyAlgorithm::Chacha20Poly1305 => Ok(OneOfCipher::ChaCha20Poly1305(
-                ChaCha20Poly1305Cipher::try_from(key.key).map_err(Error::from)?,
-            )),
+impl TryFrom<&[u8]> for KeyAlgorithm {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        match bytes[..2] {
+            [0x00, 0x01] => Ok(KeyAlgorithm::ChaCha20Poly1305),
+            [0x00, 0x02] => Ok(KeyAlgorithm::AesGcmSiv),
+            _ => Err(Error::UnsupportedAlgorithm),
         }
     }
+}
 
-    async fn get_latest_cipher(
-        &self,
-        key_id: &str,
-    ) -> Result<(OneOfCipher, EncryptionKeyRef), Error> {
-        let key = Self::latest_key(key_id);
-        let key = self
-            .storage
-            .get(&key)
-            .await
-            .map_err(Error::Storage)?
-            .ok_or(Error::NotFound)?;
-        let er = EncryptionKeyRef::decode(key.as_slice()).map_err(Error::Decode)?;
-        let c = self.get_cipher(key_id, er.version).await?;
-
-        Ok((c, er))
-    }
-
-    pub(crate) async fn get_latest_cipher_for_service(
-        &self,
-        service: &str,
-    ) -> Result<(OneOfCipher, EncryptionKeyRef), Error> {
-        let key = self.get_key_for_service(service).await?;
-        debug!("Key for service '{service}': {key:?}");
-        match key {
-            None => {
-                let cipher = ChaCha20Poly1305Cipher::default();
-                let key = EncryptionKey {
-                    id: Uuid::new_v4().to_string(),
-                    version: 1,
-                    algorithm: KeyAlgorithm::Chacha20Poly1305 as i32,
-                    key: cipher.key(),
-                };
-                let ekr = EncryptionKeyRef {
-                    id: key.id.clone(),
-                    version: key.version,
-                };
-                self.set_key(service, key).await?;
-                Ok((OneOfCipher::ChaCha20Poly1305(cipher), ekr))
+impl<L> Encryptor<L> {
+    pub(crate) async fn create_cipher(&self) -> Result<(OneOfCipher, Vec<u8>), Error> {
+        let cipher = match self.algorithm {
+            KeyAlgorithm::AesGcmSiv => OneOfCipher::AesGcmSiv(AesGcmSivCipher::default()),
+            KeyAlgorithm::ChaCha20Poly1305 => {
+                OneOfCipher::ChaCha20Poly1305(ChaCha20Poly1305Cipher::default())
             }
-            Some(key) => self.get_latest_cipher(&key.id).await,
+        };
+        let mut dek = self.algorithm.id().to_vec();
+        dek.extend(
+            self.kek
+                .encrypt(cipher.key())
+                .await
+                .map_err(Error::Encryption)?,
+        );
+
+        Ok((cipher, dek))
+    }
+
+    pub(crate) fn extract_cipher(&self, dek: &[u8]) -> Result<OneOfCipher, Error> {
+        let algorithm: KeyAlgorithm = dek[..2].try_into()?;
+        match algorithm {
+            KeyAlgorithm::ChaCha20Poly1305 => Ok(OneOfCipher::ChaCha20Poly1305(
+                ChaCha20Poly1305Cipher::try_from(&dek[2..])
+                    .map_err(|_| Error::UnsupportedAlgorithm)?,
+            )),
+            KeyAlgorithm::AesGcmSiv => Ok(OneOfCipher::AesGcmSiv(
+                AesGcmSivCipher::try_from(&dek[2..]).map_err(|_| Error::UnsupportedAlgorithm)?,
+            )),
         }
     }
 }

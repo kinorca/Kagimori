@@ -19,48 +19,37 @@ use crate::proto::kubernetes::kms::v2::{
     DecryptRequest, DecryptResponse, EncryptRequest, EncryptResponse, StatusRequest, StatusResponse,
 };
 use audit_log::AuditLogger;
-use encryption::{Ciphertext, DataStorage, Encryptor, RequestInfo};
+use encryption::{Ciphertext, Encryptor, RequestInfo};
 use std::collections::HashMap;
 use tonic::{Request, Response, Status, async_trait};
 use uuid::Uuid;
 
 const KMS_SERVICE_NAME: &str = "kubernetes.io/kms/v2";
-const KEY_VERSION_KEY: &str = "kagimori.kinorca.com/key-version";
+const DEK_KEY: &str = "dek.kagimori.kinorca.com";
 
-pub(crate) struct KmsService<S, L> {
-    encryptor: Encryptor<S, L>,
+pub(crate) struct KmsService<L> {
+    encryptor: Encryptor<L>,
 }
 
-impl<S, L> KmsService<S, L>
+impl<L> KmsService<L>
 where
-    S: DataStorage,
     L: AuditLogger,
 {
-    pub fn new(encryptor: Encryptor<S, L>) -> Self {
+    pub fn new(encryptor: Encryptor<L>) -> Self {
         Self { encryptor }
     }
 }
 
 #[async_trait]
-impl<S, L> KeyManagementService for KmsService<S, L>
+impl<L> KeyManagementService for KmsService<L>
 where
-    S: 'static,
-    S: DataStorage,
-    S: Send + Sync,
-    L: 'static,
-    L: AuditLogger,
-    L: Send + Sync,
+    L: 'static + AuditLogger,
 {
     async fn status(
         &self,
         _request: Request<StatusRequest>,
     ) -> Result<Response<StatusResponse>, Status> {
-        let kid = self
-            .encryptor
-            .get_key_id(KMS_SERVICE_NAME)
-            .await
-            .debug_log()
-            .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
+        let kid = self.encryptor.get_key_id();
         Ok(Response::new(StatusResponse {
             version: "v2".to_string(),
             healthz: "ok".to_string(),
@@ -73,14 +62,15 @@ where
         request: Request<DecryptRequest>,
     ) -> Result<Response<DecryptResponse>, Status> {
         let req = request.into_inner();
-        let version = u64::from_le_bytes(
-            req.annotations
-                .get(KEY_VERSION_KEY)
-                .ok_or(Status::invalid_argument("missing key version"))?
-                .as_slice()
-                .try_into()
-                .map_err(|_| Status::invalid_argument("invalid key version"))?,
-        );
+
+        let dek = req
+            .annotations
+            .get(DEK_KEY)
+            .ok_or(Status::invalid_argument(
+                "annotations must contain dek.kagimori.kinorca.com",
+            ))?
+            .clone();
+
         let plaintext = self
             .encryptor
             .decrypt(
@@ -92,8 +82,8 @@ where
                 },
                 Ciphertext {
                     key_id: req.key_id,
-                    version,
                     ciphertext: req.ciphertext,
+                    dek,
                 },
             )
             .await
@@ -126,10 +116,7 @@ where
         Ok(Response::new(EncryptResponse {
             ciphertext: ciphertext.ciphertext,
             key_id: ciphertext.key_id,
-            annotations: HashMap::from([(
-                KEY_VERSION_KEY.to_string(),
-                ciphertext.version.to_le_bytes().to_vec(),
-            )]),
+            annotations: HashMap::from([(DEK_KEY.to_string(), ciphertext.dek)]),
         }))
     }
 }

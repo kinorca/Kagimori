@@ -14,14 +14,13 @@
 # If not, see <https://www.gnu.org/licenses/>.
 
 [workspace]
-members = ["audit-log", "ciphers", "encryption", "server", "storage"]
+members = ["audit-log", "ciphers", "encryption", "server"]
 
 [workspace.package]
 edition = "2024"
 
 [workspace.dependencies]
 ciphers = { path = "ciphers" }
-storage = { path = "storage" }
 encryption = { path = "encryption" }
 server = { path = "server" }
 audit-log = { path = "audit-log" }
@@ -80,7 +79,6 @@ edition.workspace = true
 
 [dependencies]
 ciphers.workspace = true
-storage = { workspace = true, features = ["full"] }
 encryption.workspace = true
 server = { workspace = true, features = ["reflection"] }
 audit-log.workspace = true

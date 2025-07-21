@@ -546,9 +546,6 @@ dependencies = [
  "audit-log",
  "chrono",
  "ciphers",
- "prost",
- "prost-build",
- "storage",
  "tracing",
  "uuid",
 ]
@@ -567,22 +564,6 @@ checksum = "778e2ac28f6c47af28e4907f13ffd1e1ddbd400980a9abd7c8df189bf578a5ad"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "etcd-client"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88365f1a5671eb2f7fc240adb216786bc6494b38ce15f1d26ad6eaa303d5e822"
-dependencies = [
- "http",
- "prost",
- "tokio",
- "tokio-stream",
- "tonic",
- "tonic-build",
- "tower",
- "tower-service",
 ]
 
 [[package]]
@@ -950,7 +931,6 @@ dependencies = [
  "serde",
  "serde_yml",
  "server",
- "storage",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -1594,18 +1574,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "storage"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "ciphers",
- "etcd-client",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1645,26 +1613,6 @@ dependencies = [
  "once_cell",
  "rustix 1.0.7",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "thiserror"
-version = "2.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
-dependencies = [
- "thiserror-impl",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
