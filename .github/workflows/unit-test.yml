@@ -1,0 +1,48 @@
+name: Unit test / Lint
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  unit-test:
+    name: Unit test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codes
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: "ul-unit-test-${{ hashFiles('Cargo.lock') }}"
+          restore-keys: |
+            ul-unit-test-${{ hashFiles('Cargo.lock') }}
+            ul-unit-test-
+            ul-
+
+      - name: Run unit test
+        run: cargo test --workspace
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codes
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: "ul-clippy-${{ hashFiles('Cargo.lock') }}"
+          restore-keys: |
+            ul-clippy-${{ hashFiles('Cargo.lock') }}
+            ul-clippy-
+            ul-
+
+      - name: Run Clippy
+        run: |
+          cargo fmt --check
+          cargo clippy -- -D warnings

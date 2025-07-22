@@ -10,7 +10,7 @@ nodes:
         containerPath: /etc/kubernetes/encryption-config.yaml
     kubeadmConfigPatches:
       - |
-        apiVersion: kubeadm.k8s.io/v1beta3
+        apiVersion: kubeadm.k8s.io/v1beta4
         kind: ClusterConfiguration
         apiServer:
           extraArgs:
@@ -20,3 +20,8 @@ nodes:
               hostPath: /tmp/kagimori.sock
               mountPath: /tmp/kagimori.sock
               pathType: File
+            - name: encryption-config
+              hostPath: /etc/kubernetes/encryption-config.yaml
+              mountPath: /etc/kubernetes/encryption-config.yaml
+              pathType: File
+              readOnly: true

@@ -84,22 +84,28 @@ impl Cipher for RotatableCipher {
 mod test {
     use crate::oneof::OneOfCipher;
     use crate::rotatable::RotatableCipher;
-    use crate::{Cipher, Unencrypted};
+    use crate::{Cipher, Unencrypted, predefined_tests};
     use std::collections::HashMap;
     use uuid::Uuid;
 
-    #[tokio::test]
-    async fn test_encrypt_and_decrypt() {
+    fn create_sut() -> RotatableCipher {
         let id = Uuid::from_fields(
             0xa1a2a3a4,
             0xb1b2,
             0xc1c2,
             &[0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8],
         );
-        let sut = RotatableCipher::new(
+        RotatableCipher::new(
             id,
             HashMap::from([(id, OneOfCipher::Unencrypted(Unencrypted))]),
-        );
+        )
+    }
+
+    predefined_tests!(create_sut);
+
+    #[tokio::test]
+    async fn test_encrypt_and_decrypt() {
+        let sut = create_sut();
 
         let data = b"Hello, world!";
         let ciphertext = sut.encrypt(data).await.unwrap();

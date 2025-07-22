@@ -10,4 +10,3 @@ resources:
           name: kagimori
           endpoint: unix:///tmp/kagimori.sock
           timeout: 3s
-      - identity: { }

@@ -22,6 +22,7 @@ use audit_log::AuditLogger;
 use encryption::{Ciphertext, Encryptor, RequestInfo};
 use std::collections::HashMap;
 use tonic::{Request, Response, Status, async_trait};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 const KMS_SERVICE_NAME: &str = "kubernetes.io/kms/v2";
@@ -49,6 +50,7 @@ where
         &self,
         _request: Request<StatusRequest>,
     ) -> Result<Response<StatusResponse>, Status> {
+        info!("v2.KeyManagementService.Status called");
         let kid = self.encryptor.get_key_id();
         Ok(Response::new(StatusResponse {
             version: "v2".to_string(),
@@ -61,6 +63,7 @@ where
         &self,
         request: Request<DecryptRequest>,
     ) -> Result<Response<DecryptResponse>, Status> {
+        info!("v2.KeyManagementService.Decrypt called");
         let req = request.into_inner();
 
         let dek = req
@@ -96,6 +99,7 @@ where
         &self,
         request: Request<EncryptRequest>,
     ) -> Result<Response<EncryptResponse>, Status> {
+        info!("v2.KeyManagementService.Encrypt called");
         let req = request.into_inner();
 
         let ciphertext = self
