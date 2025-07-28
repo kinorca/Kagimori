@@ -8,5 +8,6 @@ resources:
       - kms:
           apiVersion: v2
           name: kagimori
-          endpoint: unix:///tmp/kagimori.sock
+          endpoint: unix:///var/run/kagimori/kagimori.sock
           timeout: 3s
+      - identity: { }

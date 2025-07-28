@@ -22,11 +22,11 @@ use audit_log::AuditLogger;
 use encryption::{Ciphertext, Encryptor, RequestInfo};
 use std::collections::HashMap;
 use tonic::{Request, Response, Status, async_trait};
-use tracing::{debug, info};
+use tracing::info;
 use uuid::Uuid;
 
 const KMS_SERVICE_NAME: &str = "kubernetes.io/kms/v2";
-const DEK_KEY: &str = "dek.kagimori.kinorca.com";
+const DEK_KEY: &str = "dek.v1.kagimori.kinorca.com";
 
 pub(crate) struct KmsService<L> {
     encryptor: Encryptor<L>,
@@ -65,6 +65,12 @@ where
     ) -> Result<Response<DecryptResponse>, Status> {
         info!("v2.KeyManagementService.Decrypt called");
         let req = request.into_inner();
+
+        let key_id = Uuid::parse_str(&req.key_id)
+            .map_err(|e| Status::invalid_argument(format!("Invalid key_id: {e:?}")))?;
+        if !self.encryptor.contains_key(&key_id) {
+            return Err(Status::not_found("key not found"));
+        }
 
         let dek = req
             .annotations

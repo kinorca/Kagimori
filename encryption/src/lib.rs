@@ -87,6 +87,12 @@ pub struct RequestInfo {
     pub data_key: Option<String>,
 }
 
+impl<L> Encryptor<L> {
+    pub fn contains_key(&self, key_id: &Uuid) -> bool {
+        self.kek.contains_key(key_id)
+    }
+}
+
 impl<L> Encryptor<L>
 where
     L: AuditLogger,
@@ -115,7 +121,7 @@ where
         Ok(Ciphertext {
             ciphertext,
             dek,
-            key_id: Uuid::new_v4().to_string(),
+            key_id: self.get_key_id(),
         })
     }
 

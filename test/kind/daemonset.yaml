@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kagimori
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kagimori
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kagimori
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: kagimori
+          image: ghcr.io/kinorca/kagimori:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/kagimori
+            - --listen=unix:///var/run/kagimori/kagimori.sock
+            - --kms-v2
+            - --master-key=/etc/kagimori/keys/master-key.yaml
+          env:
+            - name: LOG_LEVEL
+              value: debug
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - mountPath: /etc/kagimori/keys
+              name: master-key
+              readOnly: true
+            - mountPath: /var/run/kagimori
+              name: uds-sock-dir
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              cpu: 500m
+              memory: 128Mi
+      volumes:
+        - name: master-key
+          secret:
+            secretName: kagimori-master-key
+        - name: uds-sock-dir
+          hostPath:
+            path: /var/run/kagimori
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kagimori-master-key
+stringData:
+  master-key.yaml: |
+    default: be555a3d-11fe-4b26-b28f-3ddc349f9c6d
+    keys:
+      - algorithm: ChaCha20Poly1305
+        id: be555a3d-11fe-4b26-b28f-3ddc349f9c6d
+        key: '6cvV8L83a5MzKHaQFmjh8e8OTM+iX6j3qlhnmA5MFMA='

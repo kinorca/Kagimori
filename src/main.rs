@@ -26,17 +26,14 @@ use server::{CertificateDer, KagimoriServer, PemObject, PrivateKeyDer};
 use std::path::Path;
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::Layer;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(Layer::new())
-        .with(EnvFilter::from_env("LOG_LEVEL"))
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_env("LOG_LEVEL"))
+        .json()
         .init();
 
     info!("Kagimori {VERSION} (Licensed under the GNU General Public License v3)");

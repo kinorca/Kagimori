@@ -84,7 +84,7 @@ server = { workspace = true, features = ["reflection"] }
 audit-log.workspace = true
 
 tracing.workspace = true
-tracing-subscriber = { workspace = true, features = ["env-filter", "std"] }
+tracing-subscriber = { workspace = true, features = ["env-filter", "std", "fmt", "json"] }
 
 tokio = { workspace = true, features = ["full"] }
 

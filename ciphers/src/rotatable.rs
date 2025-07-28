@@ -40,6 +40,10 @@ impl RotatableCipher {
     pub fn default_key_id(&self) -> String {
         self.default_key_id.to_string()
     }
+
+    pub fn contains_key(&self, key_id: &Uuid) -> bool {
+        self.ciphers.contains_key(key_id)
+    }
 }
 
 #[async_trait]
@@ -53,11 +57,7 @@ impl Cipher for RotatableCipher {
     }
 
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
-        debug!("Encrypt using key: {}", self.default_key_id);
-        debug!(
-            "Encrypt key bytes: {:?}",
-            self.default_key_id.to_bytes_le().as_slice()
-        );
+        debug!("Encrypt using key ID: {}", self.default_key_id);
         let ciphertext = self.default_cipher.encrypt(data).await?;
 
         let mut encoded = Vec::new();
@@ -68,9 +68,8 @@ impl Cipher for RotatableCipher {
     }
 
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
-        debug!("Decrypt key bytes: {:?}", &data[..16]);
         let key_id = Uuid::from_slice_le(&data[..16]).map_err(|_| Error::InvalidKeyId)?;
-        debug!("Decrypt using key: {key_id}");
+        debug!("Decrypt using key ID: {key_id}");
         let ciphertext = &data[16..];
         let cipher = self
             .ciphers
