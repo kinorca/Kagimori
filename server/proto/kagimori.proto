@@ -19,26 +19,42 @@ syntax = "proto3";
 package kinorca.kagimori.v1;
 
 option java_multiple_files = true;
-option java_package = "com.kinorca.kagimori.protobuf.v1";
+option java_package = "kinorca.kagimori.protobuf.v1";
 
 option csharp_namespace = "Kinorca.Kagimori.Protobuf.V1";
 
 option go_package = "github.com/kinorca/kagimori/v1";
 
 service KagimoriKeyManagementService {
+  rpc GetInformation(GetInformationRequest) returns (GetInformationResponse);
   rpc Encrypt(EncryptRequest) returns (EncryptResponse);
   rpc Decrypt(DecryptRequest) returns (DecryptResponse);
 }
 
+message GetInformationRequest {}
+
+message GetInformationResponse {
+  // Version of the Kagimori KMS gRPC API. Must equal "kagimori.kinorca.com/v1".
+  string version = 1;
+  // Key encryption key ID.
+  string kek_id = 2;
+}
+
 message EncryptRequest {
+  // The data to be encrypted.
   bytes plaintext = 1;
+  // Requested service name. (for Audit log)
   string service = 2;
+  // Unique ID for the request.
   string uid = 3;
 }
 
 message EncryptResponse {
+  // Encrypted data.
   bytes ciphertext = 1;
-  string key_id = 2;
+  // KEK ID used for encrypt DEK.
+  string kek_id = 2;
+  // The data required for a decryption.
   map<string, bytes> annotations = 3;
 }
 
@@ -46,7 +62,8 @@ message DecryptRequest {
   bytes ciphertext = 1;
   string service = 2;
   string uid = 3;
-  map<string, bytes> annotations = 4;
+  string kek_id = 4;
+  map<string, bytes> annotations = 5;
 }
 
 message DecryptResponse {

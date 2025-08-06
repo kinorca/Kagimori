@@ -66,6 +66,9 @@ where
     if args.kms_v2 {
         server = server.enable_kms_v2();
     }
+    if args.kagimori_v1 {
+        server = server.enable_kagimori_v1();
+    }
     if let Some(sock_addr) = args.listen.strip_prefix("tcp://") {
         if let Some(cert) = args.tls_certificate
             && let Some(private_key) = args.tls_private_key

@@ -33,9 +33,11 @@ pub(crate) struct Args {
     )]
     pub listen: String,
 
-    // KMS v2
+    // Service enabler
     #[arg(long, help = "Enable Kubernetes KMS v2")]
     pub kms_v2: bool,
+    #[arg(long, help = "Enable Kagimori v1")]
+    pub kagimori_v1: bool,
 
     // TLS
     #[arg(long, help = "Path to TLS certificate PEM file")]

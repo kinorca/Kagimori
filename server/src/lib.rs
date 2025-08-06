@@ -14,6 +14,7 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 mod debug_log;
+mod kagimori;
 mod kms;
 mod proto;
 mod server;

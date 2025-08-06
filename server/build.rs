@@ -17,7 +17,7 @@ use std::env::var;
 use std::path::PathBuf;
 
 fn main() {
-    let mut builder = tonic_build::configure()
+    let mut builder = tonic_prost_build::configure()
         .build_server(true)
         .build_client(false);
     #[cfg(feature = "reflection")]

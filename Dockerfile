@@ -15,6 +15,8 @@
 
 # syntax=docker/dockerfile:1
 
+ARG version
+
 FROM rust:alpine AS builder
 
 LABEL org.opencontainers.image.source="https://github.com/kinorca/Kagimori.git"
@@ -31,7 +33,8 @@ RUN --mount=type=cache,target=/work/target \
 
 FROM scratch
 
-LABEL org.opencontainers.image.source="https://github.com/kinorca/Kagimori.git"
+LABEL org.opencontainers.image.source="https://github.com/kinorca/Kagimori.git" \
+      org.opencontainers.image.url="https://github.com/kinorca/Kagimori"
 
 COPY --from=builder /kagimori /usr/local/bin/kagimori
 

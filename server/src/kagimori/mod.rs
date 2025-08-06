@@ -14,9 +14,11 @@
 // If not, see <https://www.gnu.org/licenses/>.
 
 use crate::debug_log::DebugLog;
-use crate::proto::kubernetes::kms::v2::key_management_service_server::KeyManagementService;
-use crate::proto::kubernetes::kms::v2::{
-    DecryptRequest, DecryptResponse, EncryptRequest, EncryptResponse, StatusRequest, StatusResponse,
+use crate::kms::DEK_KEY;
+use crate::proto::kinorca::kagimori::v1::kagimori_key_management_service_server::KagimoriKeyManagementService;
+use crate::proto::kinorca::kagimori::v1::{
+    DecryptRequest, DecryptResponse, EncryptRequest, EncryptResponse, GetInformationRequest,
+    GetInformationResponse,
 };
 use audit_log::AuditLogger;
 use encryption::{Ciphertext, Encryptor, RequestInfo};
@@ -25,38 +27,59 @@ use tonic::{Request, Response, Status, async_trait};
 use tracing::info;
 use uuid::Uuid;
 
-const KMS_SERVICE_NAME: &str = "kubernetes.io/kms/v2";
-pub(crate) const DEK_KEY: &str = "dek.v1.kagimori.kinorca.com";
-
-pub(crate) struct KmsService<L> {
+pub(crate) struct KagimoriService<L> {
     encryptor: Encryptor<L>,
 }
 
-impl<L> KmsService<L>
-where
-    L: AuditLogger,
-{
-    pub fn new(encryptor: Encryptor<L>) -> Self {
+impl<L> KagimoriService<L> {
+    pub(crate) fn new(encryptor: Encryptor<L>) -> Self {
         Self { encryptor }
     }
 }
 
 #[async_trait]
-impl<L> KeyManagementService for KmsService<L>
+impl<L> KagimoriKeyManagementService for KagimoriService<L>
 where
     L: 'static + AuditLogger,
 {
-    async fn status(
+    async fn get_information(
         &self,
-        _request: Request<StatusRequest>,
-    ) -> Result<Response<StatusResponse>, Status> {
-        info!("v2.KeyManagementService.Status called");
-        let kid = self.encryptor.get_key_id();
-        Ok(Response::new(StatusResponse {
-            version: "v2".to_string(),
-            healthz: "ok".to_string(),
-            key_id: kid,
-        }))
+        _request: Request<GetInformationRequest>,
+    ) -> Result<Response<GetInformationResponse>, Status> {
+        Ok(GetInformationResponse {
+            version: "kagimori.kinorca.com/v1".to_string(),
+            kek_id: self.encryptor.get_key_id(),
+        }
+        .into())
+    }
+
+    async fn encrypt(
+        &self,
+        request: Request<EncryptRequest>,
+    ) -> Result<Response<EncryptResponse>, Status> {
+        let req = request.into_inner();
+
+        let ciphertext = self
+            .encryptor
+            .encrypt(
+                RequestInfo {
+                    event_id: Uuid::now_v7().to_string(),
+                    service: req.service,
+                    user: req.uid,
+                    data_key: None,
+                },
+                &req.plaintext,
+            )
+            .await
+            .debug_log()
+            .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
+
+        Ok(EncryptResponse {
+            ciphertext: ciphertext.ciphertext,
+            kek_id: ciphertext.key_id,
+            annotations: HashMap::from([(DEK_KEY.to_string(), ciphertext.dek)]),
+        }
+        .into())
     }
 
     async fn decrypt(
@@ -66,7 +89,7 @@ where
         info!("v2.KeyManagementService.Decrypt called");
         let req = request.into_inner();
 
-        let key_id = Uuid::parse_str(&req.key_id)
+        let key_id = Uuid::parse_str(&req.kek_id)
             .map_err(|e| Status::invalid_argument(format!("Invalid key_id: {e:?}")))?;
         if !self.encryptor.contains_key(&key_id) {
             return Err(Status::not_found("key not found"));
@@ -85,12 +108,12 @@ where
             .decrypt(
                 RequestInfo {
                     event_id: Uuid::now_v7().to_string(),
-                    service: KMS_SERVICE_NAME.to_string(),
+                    service: req.service,
                     user: req.uid,
                     data_key: None,
                 },
                 Ciphertext {
-                    key_id: req.key_id,
+                    key_id: req.kek_id,
                     ciphertext: req.ciphertext,
                     dek,
                 },
@@ -98,35 +121,6 @@ where
             .await
             .debug_log()
             .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
-        Ok(Response::new(DecryptResponse { plaintext }))
-    }
-
-    async fn encrypt(
-        &self,
-        request: Request<EncryptRequest>,
-    ) -> Result<Response<EncryptResponse>, Status> {
-        info!("v2.KeyManagementService.Encrypt called");
-        let req = request.into_inner();
-
-        let ciphertext = self
-            .encryptor
-            .encrypt(
-                RequestInfo {
-                    event_id: Uuid::now_v7().to_string(),
-                    service: KMS_SERVICE_NAME.to_string(),
-                    user: req.uid,
-                    data_key: None,
-                },
-                &req.plaintext,
-            )
-            .await
-            .debug_log()
-            .map_err(|e| Status::internal(format!("Internal: {e:?}")))?;
-
-        Ok(Response::new(EncryptResponse {
-            ciphertext: ciphertext.ciphertext,
-            key_id: ciphertext.key_id,
-            annotations: HashMap::from([(DEK_KEY.to_string(), ciphertext.dek)]),
-        }))
+        Ok(DecryptResponse { plaintext }.into())
     }
 }

@@ -27,6 +27,8 @@ use std::path::Path;
 use tokio_rustls::rustls::ServerConfig;
 use tonic::service::Routes;
 
+use crate::kagimori::KagimoriService;
+use crate::proto::kinorca::kagimori::v1::kagimori_key_management_service_server::KagimoriKeyManagementServiceServer;
 use crate::server::uds::KagimoriUnixDomainSocketServer;
 use audit_log::AuditLogger;
 pub use tokio_rustls::rustls::pki_types::pem::PemObject;
@@ -35,6 +37,7 @@ pub use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 pub struct KagimoriServer<L> {
     encryptor: Encryptor<L>,
     kms_v2_enabled: bool,
+    kagimori_v1_enabled: bool,
 }
 
 impl<L> KagimoriServer<L> {
@@ -42,6 +45,7 @@ impl<L> KagimoriServer<L> {
         Self {
             encryptor,
             kms_v2_enabled: false,
+            kagimori_v1_enabled: false,
         }
     }
 }
@@ -49,6 +53,11 @@ impl<L> KagimoriServer<L> {
 impl<L> KagimoriServer<L> {
     pub fn enable_kms_v2(mut self) -> Self {
         self.kms_v2_enabled = true;
+        self
+    }
+
+    pub fn enable_kagimori_v1(mut self) -> Self {
+        self.kagimori_v1_enabled = true;
         self
     }
 }
@@ -88,6 +97,11 @@ where
             routes = routes.add_service(KeyManagementServiceServer::new(KmsService::new(
                 self.encryptor.clone(),
             )));
+        }
+        if self.kagimori_v1_enabled {
+            routes = routes.add_service(KagimoriKeyManagementServiceServer::new(
+                KagimoriService::new(self.encryptor.clone()),
+            ));
         }
 
         #[cfg(feature = "reflection")]
