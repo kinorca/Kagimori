@@ -29,6 +29,7 @@ service KagimoriKeyManagementService {
   rpc GetInformation(GetInformationRequest) returns (GetInformationResponse);
   rpc Encrypt(EncryptRequest) returns (EncryptResponse);
   rpc Decrypt(DecryptRequest) returns (DecryptResponse);
+  rpc Migrate(MigrateRequest) returns (MigrateResponse);
 }
 
 message GetInformationRequest {}
@@ -68,4 +69,12 @@ message DecryptRequest {
 
 message DecryptResponse {
   bytes plaintext = 1;
+}
+
+message MigrateRequest {
+  repeated DecryptRequest requests = 1;
+}
+
+message MigrateResponse {
+  repeated EncryptResponse responses = 1;
 }
