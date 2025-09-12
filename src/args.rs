@@ -15,7 +15,6 @@
 
 use crate::master_key::MasterKeyConfig;
 use clap::{Parser, ValueEnum};
-use std::fs::File;
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub(crate) enum CipherAlgorithm {
@@ -56,7 +55,7 @@ pub(crate) struct Args {
 
 impl Args {
     pub(crate) fn create_master_key(&self) -> MasterKeyConfig {
-        let file = File::open(&self.master_key).unwrap();
-        serde_yml::from_reader(file).unwrap()
+        let content = std::fs::read_to_string(&self.master_key).unwrap();
+        toml::from_str(&content).unwrap()
     }
 }

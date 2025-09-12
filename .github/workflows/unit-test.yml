@@ -1,4 +1,4 @@
-name: Unit test / Lint
+name: Unit test and Lint
 on:
   pull_request:
     branches:
@@ -10,12 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Install OS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
 
       - name: Cache
         uses: actions/cache@v4
         with:
-          path: target
+          path: |
+            target
+            ~/.cargo
           key: "ul-unit-test-${{ hashFiles('Cargo.lock') }}"
           restore-keys: |
             ul-unit-test-${{ hashFiles('Cargo.lock') }}
@@ -30,12 +37,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Install OS packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
 
       - name: Cache
         uses: actions/cache@v4
         with:
-          path: target
+          path: |
+            target
+            ~/.cargo
           key: "ul-clippy-${{ hashFiles('Cargo.lock') }}"
           restore-keys: |
             ul-clippy-${{ hashFiles('Cargo.lock') }}
@@ -46,3 +60,29 @@ jobs:
         run: |
           cargo fmt --check
           cargo clippy -- -D warnings
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codes
+        uses: actions/checkout@v5
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            target
+            ~/.cargo
+          key: "ul-cargo-deny-${{ hashFiles('Cargo.lock') }}"
+          restore-keys: |
+            ul-cargo-deny-${{ hashFiles('Cargo.lock') }}
+            ul-cargo-deny-
+            ul-
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Run Cargo Deny
+        run: |
+          cargo deny check

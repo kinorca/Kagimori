@@ -102,7 +102,6 @@ where
                     }
                     Err(e) => {
                         error!("Failed to accept TLS connection: {e}");
-                        return;
                     }
                 }
             });

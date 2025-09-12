@@ -1,0 +1,6 @@
+default = "be555a3d-11fe-4b26-b28f-3ddc349f9c6d"
+
+[[keys]]
+algorithm = 'ChaCha20Poly1305'
+id = 'be555a3d-11fe-4b26-b28f-3ddc349f9c6d'
+key = '6cvV8L83a5MzKHaQFmjh8e8OTM+iX6j3qlhnmA5MFMA='
