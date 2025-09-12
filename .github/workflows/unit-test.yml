@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache
         uses: actions/cache@v4
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codes
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache
         uses: actions/cache@v4
@@ -46,3 +46,27 @@ jobs:
         run: |
           cargo fmt --check
           cargo clippy -- -D warnings
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout codes
+        uses: actions/checkout@v5
+
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: "ul-cargo-deny-${{ hashFiles('Cargo.lock') }}"
+          restore-keys: |
+            ul-cargo-deny-${{ hashFiles('Cargo.lock') }}
+            ul-cargo-deny-
+            ul-
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Run Cargo Deny
+        run: |
+          cargo deny check
