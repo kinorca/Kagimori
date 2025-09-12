@@ -53,7 +53,7 @@ jobs:
             ghcr.io/kinorca/kagimori:v${{ env.VERSION }}
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ghcr.io/kinorca/kagimori
           subject-digest: ${{ steps.push_to_registry.outputs.digest }}
