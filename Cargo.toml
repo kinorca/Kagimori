@@ -39,7 +39,7 @@ tonic-prost = "0.14.2"
 prost = "0.14.1"
 
 hyper = "1.7.0"
-hyper-util = "0.1.16"
+hyper-util = "0.1.17"
 
 tower = "0.5.2"
 
