@@ -62,16 +62,41 @@ where
         cipher,
     );
 
-    let mut server = KagimoriServer::new(encryptor);
-    if args.kms_v2 {
-        server = server.enable_kms_v2();
-    }
-    if args.kagimori_v1 {
-        server = server.enable_kagimori_v1();
-    }
-    if let Some(sock_addr) = args.listen.strip_prefix("tcp://") {
-        if let Some(cert) = args.tls_certificate
-            && let Some(private_key) = args.tls_private_key
+    let kms_v2_job = if args.kms_v2 {
+        let server = KagimoriServer::new(encryptor.clone()).enable_kms_v2();
+        Some(tokio::spawn(run_grpc_server(
+            server,
+            args.listen_kms_v2,
+            args.tls_certificate.clone(),
+            args.tls_private_key.clone(),
+        )))
+    } else {
+        None
+    };
+    let kagimori_v1_job = if args.kagimori_v1 {
+        let server = KagimoriServer::new(encryptor.clone()).enable_kagimori_v1();
+        Some(tokio::spawn(run_grpc_server(
+            server,
+            args.listen_kagimori_v1,
+            args.tls_certificate.clone(),
+            args.tls_private_key.clone(),
+        )))
+    } else {
+        None
+    };
+}
+
+async fn run_grpc_server<L>(
+    server: KagimoriServer<L>,
+    listen: String,
+    tls_certificate: Option<String>,
+    tls_private_key: Option<String>,
+) where
+    L: 'static + AuditLogger + Clone,
+{
+    if let Some(sock_addr) = listen.strip_prefix("tcp://") {
+        if let Some(cert) = tls_certificate
+            && let Some(private_key) = tls_private_key
         {
             let cert = CertificateDer::pem_file_iter(cert)
                 .unwrap()
@@ -87,7 +112,7 @@ where
         } else {
             server.bind(sock_addr.parse().unwrap()).run().await.unwrap();
         }
-    } else if let Some(path) = args.listen.strip_prefix("unix://") {
+    } else if let Some(path) = listen.strip_prefix("unix://") {
         server.bind_uds(Path::new(path)).run().await.unwrap();
     }
 }

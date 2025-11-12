@@ -18,5 +18,6 @@ mod kagimori;
 mod kms;
 mod proto;
 mod server;
+mod transit_stateless;
 
 pub use server::*;

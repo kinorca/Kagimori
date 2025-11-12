@@ -30,13 +30,27 @@ pub(crate) struct Args {
         help = "Listen address (tcp://HOST:PORT or unix://PATH)",
         default_value = "tcp://0.0.0.0:8602"
     )]
-    pub listen: String,
+    pub listen_kms_v2: String,
+    #[arg(
+        long,
+        help = "Listen address (tcp://HOST:PORT or unix://PATH)",
+        default_value = "tcp://0.0.0.0:8603"
+    )]
+    pub listen_kagimori_v1: String,
+    #[arg(
+        long,
+        help = "Listen address (http://HOST:PORT)",
+        default_value = "http://0.0.0.0:8604"
+    )]
+    pub listen_transit_stateless_v1: String,
 
     // Service enabler
-    #[arg(long, help = "Enable Kubernetes KMS v2")]
+    #[arg(long, help = "Enable Kubernetes KMS v2 API")]
     pub kms_v2: bool,
-    #[arg(long, help = "Enable Kagimori v1")]
+    #[arg(long, help = "Enable Kagimori v1 gRPC API")]
     pub kagimori_v1: bool,
+    #[arg(long, help = "Enable Transit v1 API (Stateless mode)")]
+    pub transit_stateless_v1: bool,
 
     // TLS
     #[arg(long, help = "Path to TLS certificate PEM file")]
