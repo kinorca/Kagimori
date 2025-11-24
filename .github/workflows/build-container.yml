@@ -15,7 +15,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout codes
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Get version
         id: get_version
