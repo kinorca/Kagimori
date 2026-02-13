@@ -38,7 +38,7 @@ tonic-reflection = "0.14.2"
 tonic-prost = "0.14.2"
 prost = "0.14.3"
 
-hyper = "1.7.0"
+hyper = "1.8.1"
 hyper-util = "0.1.17"
 
 tower = "0.5.3"
