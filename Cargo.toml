@@ -28,7 +28,7 @@ audit-log = { path = "audit-log" }
 
 # async
 async-trait = "0.1.89"
-tokio = "1.47.1"
+tokio = "1.49.0"
 tokio-rustls = "0.26.4"
 
 # gRPC / protobuf
