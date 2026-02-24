@@ -33,7 +33,7 @@ tokio-rustls = "0.26.4"
 
 # gRPC / protobuf
 tonic = "0.14.3"
-tonic-prost-build = "0.14.2"
+tonic-prost-build = "0.14.3"
 tonic-reflection = "0.14.3"
 tonic-prost = "0.14.3"
 prost = "0.14.3"
