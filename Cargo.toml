@@ -53,7 +53,7 @@ toml = "0.9.11"
 
 # misc
 uuid = "1.20.0"
-chrono = "0.4.43"
+chrono = "0.4.44"
 clap = "4.5.60"
 base64 = "0.22.1"
 
