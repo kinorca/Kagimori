@@ -19,6 +19,7 @@ pub mod logger;
 use async_trait::async_trait;
 pub use data::*;
 
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait AuditLogger: Send + Sync {
     async fn log(&self, log: AuditLog);

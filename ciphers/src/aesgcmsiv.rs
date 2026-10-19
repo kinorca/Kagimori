@@ -18,7 +18,6 @@ use aes_siv::aead::generic_array::typenum::Unsigned;
 use aes_siv::aead::{Aead, OsRng};
 use aes_siv::{AeadCore, Aes256SivAead, Key, KeyInit, KeySizeUser};
 use async_trait::async_trait;
-use chacha20poly1305::ChaCha20Poly1305;
 
 #[derive(Clone)]
 pub struct AesGcmSivCipher {
@@ -41,7 +40,7 @@ impl TryFrom<&[u8]> for AesGcmSivCipher {
     type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
+        if value.len() != <Aes256SivAead as KeySizeUser>::KeySize::USIZE {
             Err(Error::InvalidKeyLength)
         } else {
             Ok(Self::new(Key::<Aes256SivAead>::clone_from_slice(value)))
@@ -102,4 +101,13 @@ mod tests {
     }
 
     predefined_tests!(create_sut);
+
+    #[test]
+    fn test_key_length_validation() {
+        assert!(AesGcmSivCipher::try_from([0u8; 512 / 8].as_slice()).is_ok());
+        assert!(matches!(
+            AesGcmSivCipher::try_from([0u8; 256 / 8].as_slice()),
+            Err(Error::InvalidKeyLength)
+        ));
+    }
 }
