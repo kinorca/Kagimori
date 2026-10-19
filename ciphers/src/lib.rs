@@ -25,6 +25,7 @@ mod test;
 pub use crate::error::Error;
 use async_trait::async_trait;
 
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait Cipher: Send + Sync {
     fn name(&self) -> &'static str;

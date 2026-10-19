@@ -16,26 +16,25 @@
 use crate::Cipher;
 use crate::error::Error;
 use async_trait::async_trait;
-use chacha20poly1305::aead::generic_array::typenum::Unsigned;
-use chacha20poly1305::aead::{Aead, Nonce, OsRng};
-use chacha20poly1305::{AeadCore, ChaCha20Poly1305, Key, KeyInit, KeySizeUser};
+use chacha20poly1305::ChaCha20Poly1305;
+use chacha20poly1305::aead::{Aead, Generate, Key, KeyInit, Nonce};
 
 #[derive(Clone)]
 pub struct ChaCha20Poly1305Cipher {
-    key: Key,
+    key: Key<ChaCha20Poly1305>,
 }
 
 type ChaCha20Poly1305Nonce = Nonce<ChaCha20Poly1305>;
 
 impl ChaCha20Poly1305Cipher {
-    pub fn new(key: Key) -> Self {
+    pub fn new(key: Key<ChaCha20Poly1305>) -> Self {
         Self { key }
     }
 }
 
 impl Default for ChaCha20Poly1305Cipher {
     fn default() -> Self {
-        Self::new(ChaCha20Poly1305::generate_key(&mut OsRng))
+        Self::new(Key::<ChaCha20Poly1305>::generate())
     }
 }
 
@@ -43,11 +42,9 @@ impl TryFrom<&[u8]> for ChaCha20Poly1305Cipher {
     type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.len() != <ChaCha20Poly1305 as KeySizeUser>::KeySize::USIZE {
-            Err(Error::InvalidKeyLength)
-        } else {
-            Ok(Self::new(Key::clone_from_slice(value)))
-        }
+        Key::<ChaCha20Poly1305>::try_from(value)
+            .map(Self::new)
+            .map_err(|_| Error::InvalidKeyLength)
     }
 }
 
@@ -71,7 +68,7 @@ impl Cipher for ChaCha20Poly1305Cipher {
 
     async fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
         let cipher = ChaCha20Poly1305::new(&self.key);
-        let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+        let nonce = ChaCha20Poly1305Nonce::generate();
 
         let data = cipher
             .encrypt(&nonce, data)
@@ -85,12 +82,16 @@ impl Cipher for ChaCha20Poly1305Cipher {
     }
 
     async fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, Error> {
-        let nonce_size = <ChaCha20Poly1305 as AeadCore>::NonceSize::USIZE;
-        let nonce = ChaCha20Poly1305Nonce::from_slice(&data[..nonce_size]);
+        let nonce_size = ChaCha20Poly1305Nonce::default().len();
+        let (nonce_bytes, ciphertext) = data
+            .split_at_checked(nonce_size)
+            .ok_or(Error::ChaCha20Poly1305(chacha20poly1305::Error))?;
+        let nonce = ChaCha20Poly1305Nonce::try_from(nonce_bytes)
+            .map_err(|_| Error::ChaCha20Poly1305(chacha20poly1305::Error))?;
 
         let cipher = ChaCha20Poly1305::new(&self.key);
         cipher
-            .decrypt(nonce, &data[nonce_size..])
+            .decrypt(&nonce, ciphertext)
             .map_err(Error::ChaCha20Poly1305)
     }
 }
@@ -99,11 +100,11 @@ impl Cipher for ChaCha20Poly1305Cipher {
 mod tests {
     use crate::chacha20poly1305::ChaCha20Poly1305Cipher;
     use crate::predefined_tests;
-    use chacha20poly1305::Key;
+    use chacha20poly1305::ChaCha20Poly1305;
+    use chacha20poly1305::aead::Key;
 
     fn create_sut() -> ChaCha20Poly1305Cipher {
-        let key = Key::from_slice(&[0u8; 32]);
-        ChaCha20Poly1305Cipher::new(*key)
+        ChaCha20Poly1305Cipher::new(Key::<ChaCha20Poly1305>::default())
     }
 
     predefined_tests!(create_sut);
